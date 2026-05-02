@@ -4,47 +4,64 @@
 
 /* ===== EmPay Design System Tokens ===== */
 :root {
-  /* Primary palette */
-  --color-primary: #7C3AED;
-  --color-primary-hover: #6D28D9;
-  --color-primary-light: #EDE9FE;
+  /* Branding (Constant across themes) */
+  --color-primary: #10b981;        /* Emerald Green */
+  --color-primary-hover: #059669;
+  --color-primary-light: rgba(16, 185, 129, 0.1);
+  --color-info: #3b82f6;           /* Professional Blue */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
 
-  /* Status colors */
-  --color-success: #10B981;
-  --color-warning: #F59E0B;
-  --color-danger: #EF4444;
-  --color-info: #3B82F6;
+  /* Theme-Dependent Tokens (Defaults to Dark Mode) */
+  --bg-body: #111827;              /* Deep Midnight Blue */
+  --bg-sidebar: #111827;
+  --bg-card: #1f2937;              /* Dark Slate Surface */
+  --bg-card-hover: #374151;
+  --bg-input: #111827;
+  --bg-modal: #1f2937;
+  --border-color: #374151;
+  --glass-bg: rgba(31, 41, 55, 0.7);
 
-  /* Backgrounds */
-  --bg-body: #0F172A;
-  --bg-sidebar: #1E293B;
-  --bg-card: #1E293B;
-  --bg-card-hover: #334155;
-  --bg-input: #0F172A;
-  --bg-modal: #1E293B;
+  /* Text Colors */
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;       /* Muted Labels */
+  --text-muted: #6b7280;
 
-  /* Text */
-  --text-primary: #F8FAFC;
-  --text-secondary: #94A3B8;
-  --text-accent: #C084FC;
+  /* Breadcrumb — Pill Surface */
+  --breadcrumb-surface: #1f2937;
+  --breadcrumb-border: #374151;
+  --breadcrumb-radius: var(--border-radius-pill);
+  --border-radius-pill: 50px;
 
-  /* Borders */
-  --border-color: #334155;
-  --border-radius: 12px;
-  --border-radius-sm: 8px;
-
-  /* Spacing */
+  /* Spacing & Layout */
   --sidebar-width: 260px;
   --navbar-height: 64px;
 
   /* Shadows */
   --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
   --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px rgba(124, 58, 237, 0.3);
+}
 
-  /* Transitions */
-  --transition-fast: 150ms ease;
-  --transition-normal: 300ms ease;
+/* Light Mode Overrides */
+.light-theme {
+  --bg-body: #F9FAFB;              /* Light Smoke */
+  --bg-sidebar: #111827;           /* Keep Sidebar Dark for Dasher Look */
+  --bg-card: #FFFFFF;              /* Pure White */
+  --bg-card-hover: #F3F4F6;
+  --bg-input: #FFFFFF;
+  --bg-modal: #FFFFFF;
+  --border-color: #E5E7EB;         /* Light Gray Border */
+  --glass-bg: rgba(255, 255, 255, 0.8);
+
+  --text-primary: #111827;         /* Deep Blue/Black */
+  --text-secondary: #4B5563;
+  --text-muted: #6B7280;           /* Cool Gray */
+
+  --breadcrumb-surface: #E5E7EB;   /* Light Gray Pill */
+  --breadcrumb-border: #D1D5DB;
+
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
 /* ===== Base Styles ===== */

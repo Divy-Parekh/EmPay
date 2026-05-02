@@ -24,8 +24,8 @@ export function canAccess(role, module) {
   const matrix = {
     admin: ['employees', 'attendance', 'time_off', 'payroll', 'reports', 'settings', 'company', 'salary_info'],
     employee: ['attendance', 'time_off'],
-    hr_officer: ['employees', 'attendance', 'time_off'],
-    payroll_officer: ['employees', 'attendance', 'time_off', 'payroll', 'reports', 'salary_info'],
+    hr_officer: ['employees', 'attendance', 'time_off', 'settings'],
+    payroll_officer: ['employees', 'attendance', 'time_off', 'payroll', 'reports', 'settings', 'salary_info'],
   };
   return matrix[role]?.includes(module) || false;
 }
