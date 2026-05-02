@@ -1,10 +1,15 @@
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 async function request(endpoint, options = {}) {
+  // Ensure we get the latest token from localStorage
   const token = localStorage.getItem('empay_token');
+  
   const headers = {
+    // Default to JSON if not FormData
     ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
-    ...(token && { Authorization: `Bearer ${token}` }),
+    // Auth header
+    ...(token && { 'Authorization': `Bearer ${token}` }),
+    // Required for ngrok free tier
     'ngrok-skip-browser-warning': 'true',
     ...options.headers,
   };
@@ -15,17 +20,32 @@ async function request(endpoint, options = {}) {
       headers,
     });
 
-    /* Handle 401 — redirect to login */
+    // Handle 401 Unauthorized — ONLY if it's not the initial health check or something minor
     if (res.status === 401) {
-      localStorage.removeItem('empay_token');
-      localStorage.removeItem('empay_user');
-      window.location.href = '/login';
-      return { success: false, error: { message: 'Session expired' } };
+      console.warn('Unauthorized request to:', endpoint);
+      
+      // If we're already on login, don't redirect again
+      if (window.location.pathname !== '/login') {
+        localStorage.removeItem('empay_token');
+        localStorage.removeItem('empay_user');
+        window.location.href = '/login?session=expired';
+      }
+      
+      return { 
+        success: false, 
+        error: { code: 'UNAUTHORIZED', message: 'Session expired' } 
+      };
     }
 
-    const data = await res.json();
-    return data;
+    // Try to parse JSON, if it fails, return raw text or empty
+    const contentType = res.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      return await res.json();
+    }
+    
+    return { success: res.ok };
   } catch (err) {
+    console.error('API Error:', err);
     return {
       success: false,
       error: { code: 'NETWORK_ERROR', message: 'Unable to connect to the server' },
@@ -44,6 +64,6 @@ export const api = {
     request(url, {
       method: 'POST',
       body: formData,
-      headers: {},
+      headers: {}, // fetch will set boundary for FormData automatically
     }),
 };

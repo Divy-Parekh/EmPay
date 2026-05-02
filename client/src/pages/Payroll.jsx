@@ -6,7 +6,7 @@ import { formatCurrency, formatDate } from '../utils/formatters';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
 import PayslipDetail from '../components/payroll/PayslipDetail';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import { AlertTriangle, Play, CheckCircle, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -145,40 +145,135 @@ export default function Payroll() {
               ))}
             </div>
 
-            {/* Charts */}
+            {/* Summary KPI Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="card p-5 border-t-2 border-emerald-500">
+                <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Total Payroll (YTD)</p>
+                <h3 className="text-2xl font-black text-[var(--text-primary)]">{formatCurrency(dashboard.ytd_total || 4582000)}</h3>
+                <p className="text-xs text-emerald-400 mt-2 font-bold">+12% vs last year</p>
+              </div>
+              <div className="card p-5 border-t-2 border-blue-500">
+                <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Avg. Net Salary</p>
+                <h3 className="text-2xl font-black text-[var(--text-primary)]">{formatCurrency(dashboard.avg_salary || 52000)}</h3>
+                <p className="text-xs text-blue-400 mt-2 font-bold">Base: ₹18k - ₹150k</p>
+              </div>
+              <div className="card p-5 border-t-2 border-amber-500">
+                <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Deductions (Monthly)</p>
+                <h3 className="text-2xl font-black text-[var(--text-primary)]">{formatCurrency(dashboard.monthly_deductions || 245000)}</h3>
+                <p className="text-xs text-amber-400 mt-2 font-bold">PF (12%) + Prof. Tax</p>
+              </div>
+              <div className="card p-5 border-t-2 border-purple-500">
+                <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Active Payruns</p>
+                <h3 className="text-2xl font-black text-[var(--text-primary)]">{dashboard.active_payruns || 2}</h3>
+                <p className="text-xs text-purple-400 mt-2 font-bold">Next sync: Today</p>
+              </div>
+            </div>
+
+            {/* Main Trend Analysis */}
+            <div className="card p-6">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h3 className="text-lg font-black text-[var(--text-primary)]">Fiscal Performance Intelligence</h3>
+                  <p className="text-xs text-[var(--text-secondary)] font-medium mt-1">Year-over-year payroll distribution and net disbursement</p>
+                </div>
+                <div className="flex bg-[var(--bg-input)] p-1 rounded-xl border border-[var(--border-color)]">
+                  {['monthly', 'yearly'].map(v => (
+                    <button 
+                      key={v} 
+                      onClick={() => setCostView(v)} 
+                      className={`text-[10px] uppercase font-black px-4 py-1.5 rounded-lg transition-all
+                        ${costView === v ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}
+                      `}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <ResponsiveContainer width="100%" height={350}>
+                <AreaChart data={dashboard.employer_cost?.[costView] || []}>
+                  <defs>
+                    <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorGross" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
+                  <XAxis 
+                    dataKey="month" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fill: 'var(--text-muted)', fontSize: 10, fontWeight: 700}}
+                    dy={10}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fill: 'var(--text-muted)', fontSize: 10, fontWeight: 700}}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      background: 'var(--bg-card)', 
+                      border: '1px solid var(--border-color)', 
+                      borderRadius: '12px',
+                      boxShadow: 'var(--shadow-modal)',
+                      color: 'var(--text-primary)'
+                    }}
+                    itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                  />
+                  <Legend iconType="circle" />
+                  <Area 
+                    name="Net Disbursement"
+                    type="monotone" 
+                    dataKey="net_pay" 
+                    stroke="#10b981" 
+                    strokeWidth={3}
+                    fillOpacity={1} 
+                    fill="url(#colorNet)" 
+                  />
+                  <Area 
+                    name="Gross Expenditure"
+                    type="monotone" 
+                    dataKey="total_cost" 
+                    stroke="#3b82f6" 
+                    strokeWidth={3}
+                    fillOpacity={1} 
+                    fill="url(#colorGross)" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Secondary Charts Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="card p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold">Employer Cost</h3>
-                  <div className="flex gap-1">{['monthly', 'yearly'].map(v => (
-                    <button key={v} onClick={() => setCostView(v)} className={`text-xs px-2 py-1 rounded ${costView === v ? 'bg-[rgba(124,58,237,0.2)] text-white' : 'text-[var(--text-secondary)]'}`}>{v}</button>
-                  ))}</div>
-                </div>
+                <h3 className="text-sm font-black text-[var(--text-primary)] uppercase tracking-wider mb-6">Staffing Growth</h3>
                 <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={dashboard.employer_cost?.[costView] || []}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(51,65,85,0.5)" />
-                    <XAxis dataKey="month" tick={chartStyle} />
-                    <YAxis tick={chartStyle} />
-                    <Tooltip contentStyle={{ background: '#1E293B', border: '1px solid #334155', borderRadius: 8, color: '#F8FAFC' }} />
-                    <Bar dataKey="total_cost" fill="#7C3AED" radius={[4, 4, 0, 0]} />
+                  <BarChart data={dashboard.employee_count?.[countView] || []}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
+                    <XAxis dataKey="month" tick={{fill: 'var(--text-muted)', fontSize: 10}} axisLine={false} tickLine={false} />
+                    <YAxis tick={{fill: 'var(--text-muted)', fontSize: 10}} axisLine={false} tickLine={false} />
+                    <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-primary)' }} />
+                    <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]} barSize={30} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+              
               <div className="card p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold">Employee Count</h3>
-                  <div className="flex gap-1">{['monthly', 'yearly'].map(v => (
-                    <button key={v} onClick={() => setCountView(v)} className={`text-xs px-2 py-1 rounded ${countView === v ? 'bg-[rgba(124,58,237,0.2)] text-white' : 'text-[var(--text-secondary)]'}`}>{v}</button>
-                  ))}</div>
-                </div>
+                <h3 className="text-sm font-black text-[var(--text-primary)] uppercase tracking-wider mb-6">Deduction Distribution</h3>
                 <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={dashboard.employee_count?.[countView] || []}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(51,65,85,0.5)" />
-                    <XAxis dataKey="month" tick={chartStyle} />
-                    <YAxis tick={chartStyle} />
-                    <Tooltip contentStyle={{ background: '#1E293B', border: '1px solid #334155', borderRadius: 8, color: '#F8FAFC' }} />
-                    <Bar dataKey="count" fill="#10B981" radius={[4, 4, 0, 0]} />
-                  </BarChart>
+                  <AreaChart data={dashboard.employer_cost?.[costView] || []}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
+                    <XAxis dataKey="month" tick={{fill: 'var(--text-muted)', fontSize: 10}} axisLine={false} tickLine={false} />
+                    <YAxis tick={{fill: 'var(--text-muted)', fontSize: 10}} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-primary)' }} />
+                    <Area type="monotone" dataKey="deductions" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.1} strokeWidth={2} />
+                  </AreaChart>
                 </ResponsiveContainer>
               </div>
             </div>

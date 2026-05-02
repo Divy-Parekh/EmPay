@@ -3,9 +3,10 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../../hooks/useAuth';
 import { getInitials } from '../../utils/formatters';
-import { Menu, User, LogOut, Bell, Check } from 'lucide-react';
+import { Menu, User, LogOut, Bell, Check, Sun, Moon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fetchNotifications, markAsRead } from '../../store/slices/notificationSlice';
+import Breadcrumb from './Breadcrumb';
 
 export default function Navbar({ onMenuToggle }) {
   const dispatch = useDispatch();
@@ -15,10 +16,23 @@ export default function Navbar({ onMenuToggle }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
+  const [theme, setTheme] = useState(localStorage.getItem('empay-theme') || 'dark');
   
   const dropdownRef = useRef(null);
   const notifDropdownRef = useRef(null);
   const navigate = useNavigate();
+
+  // Handle Theme Switching
+  useEffect(() => {
+    if (theme === 'light') {
+      document.documentElement.classList.add('light-theme');
+    } else {
+      document.documentElement.classList.remove('light-theme');
+    }
+    localStorage.setItem('empay-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
   useEffect(() => {
     dispatch(fetchNotifications());
@@ -64,22 +78,26 @@ export default function Navbar({ onMenuToggle }) {
 
   return (
     <header
-      className="sticky top-0 z-30 flex items-center justify-between px-4 lg:px-6"
+      className="sticky top-0 z-30 flex items-center justify-between px-4 lg:px-6 transition-all duration-300"
       style={{
         height: 'var(--navbar-height)',
-        background: 'rgba(15, 23, 42, 0.8)',
-        backdropFilter: 'blur(12px)',
+        background: 'var(--glass-bg)',
+        backdropFilter: 'blur(16px)',
         borderBottom: '1px solid var(--border-color)',
       }}
     >
-      {/* Left — menu toggle (mobile) */}
-      <button
-        onClick={onMenuToggle}
-        className="p-2 rounded-lg hover:bg-[var(--bg-card-hover)] transition-colors lg:hidden"
-        id="navbar-menu-toggle"
-      >
-        <Menu size={20} className="text-[var(--text-secondary)]" />
-      </button>
+      {/* Left — menu toggle (mobile) + Breadcrumb */}
+      <div className="flex items-center gap-4">
+        <button
+          onClick={onMenuToggle}
+          className="p-2 rounded-lg hover:bg-[var(--bg-card-hover)] transition-colors lg:hidden"
+          id="navbar-menu-toggle"
+        >
+          <Menu size={20} className="text-[var(--text-secondary)]" />
+        </button>
+        
+        <Breadcrumb />
+      </div>
 
       {/* Spacer */}
       <div className="flex-1" />
@@ -162,6 +180,19 @@ export default function Navbar({ onMenuToggle }) {
             </div>
           )}
         </div>
+
+        {/* Theme Toggle Button */}
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-lg hover:bg-[var(--bg-card-hover)] transition-all duration-300"
+          title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+        >
+          {theme === 'dark' ? (
+            <Sun size={20} className="text-amber-400" />
+          ) : (
+            <Moon size={20} className="text-[#3b82f6]" />
+          )}
+        </button>
 
         {/* Check In / Out button */}
         <button
