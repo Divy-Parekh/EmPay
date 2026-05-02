@@ -76,6 +76,15 @@ const EmployeeService = {
     // Send credentials email (non-blocking)
     sendCredentialsEmail(email, loginId, plainPassword, company.name);
 
+    // Trigger Notification to Admins and HR
+    const NotificationService = require('./notification.service');
+    NotificationService.notifyCompanyAdminsAndHR(
+      company_id,
+      'New Employee Joined',
+      `${first_name} ${last_name} has joined as ${job_position || 'an employee'}.`,
+      'employee'
+    ).catch(err => console.error('Notification failed:', err));
+
     return {
       employee: { id: employee.id, first_name, last_name, email },
       loginId,

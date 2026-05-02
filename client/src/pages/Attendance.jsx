@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { useAuth } from '../hooks/useAuth';
-import { attendanceApi } from '../api/attendance.api';
+import { fetchAllAttendance, fetchMyAttendance } from '../store/slices/attendanceSlice';
 import { canAccess } from '../utils/roles';
 import { formatTime, formatHours, getMonthName } from '../utils/formatters';
 import DateNavigator from '../components/common/DateNavigator';
@@ -9,33 +10,24 @@ import { CalendarDays, Clock, TreePalm } from 'lucide-react';
 
 export default function Attendance() {
   const { user } = useAuth();
+  const dispatch = useDispatch();
   const isAdmin = canAccess(user?.role, 'settings') || user?.role === 'hr_officer' || user?.role === 'payroll_officer';
+  
+  const { adminRecords, myRecords, summary, loading } = useSelector((state) => state.attendance);
+  const records = isAdmin ? adminRecords : myRecords;
+
   const today = new Date().toISOString().split('T')[0];
   const [date, setDate] = useState(today);
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
-  const [records, setRecords] = useState([]);
-  const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isAdmin) fetchAll();
-    else fetchMy();
-  }, [date, month, year]);
-
-  const fetchAll = async () => {
-    setLoading(true);
-    const res = await attendanceApi.getAll({ date });
-    if (res.success) setRecords(res.data || []);
-    setLoading(false);
-  };
-
-  const fetchMy = async () => {
-    setLoading(true);
-    const res = await attendanceApi.getMy({ month, year });
-    if (res.success) { setRecords(res.data?.records || []); setSummary(res.data?.summary || null); }
-    setLoading(false);
-  };
+    if (isAdmin) {
+      dispatch(fetchAllAttendance({ date }));
+    } else {
+      dispatch(fetchMyAttendance({ month, year }));
+    }
+  }, [dispatch, isAdmin, date, month, year]);
 
   const handleMonthChange = (dir) => {
     let m = month + dir, y = year;
@@ -90,7 +82,7 @@ export default function Attendance() {
 
           {/* Stats */}
           {summary && (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="card p-4 text-center">
                 <CalendarDays size={20} className="mx-auto mb-2 text-[var(--color-success)]" />
                 <p className="text-2xl font-bold text-[var(--color-success)]">{summary.days_present}</p>
@@ -103,8 +95,13 @@ export default function Attendance() {
               </div>
               <div className="card p-4 text-center">
                 <Clock size={20} className="mx-auto mb-2 text-[var(--text-accent)]" />
+                <p className="text-2xl font-bold">{formatHours(summary.total_work_hours)}</p>
+                <p className="text-xs text-[var(--text-secondary)] mt-1">Total Hours</p>
+              </div>
+              <div className="card p-4 text-center">
+                <CalendarDays size={20} className="mx-auto mb-2 text-[var(--text-secondary)]" />
                 <p className="text-2xl font-bold">{summary.total_working_days}</p>
-                <p className="text-xs text-[var(--text-secondary)] mt-1">Total Working Days</p>
+                <p className="text-xs text-[var(--text-secondary)] mt-1">Working Days</p>
               </div>
             </div>
           )}

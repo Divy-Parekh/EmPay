@@ -54,8 +54,25 @@ const PayrollService = {
     const periodEnd = payrun.period_end;
     const totalWorkingDays = getBusinessDays(new Date(periodStart), new Date(periodEnd));
 
-    const payslips = [];
+    // Get existing payslips to avoid redundant work (incremental logic)
+    const existingPayslips = await PayrollModel.findPayslipsByPayrun(payrunId);
+    const existingEmployeeIds = new Set(existingPayslips.map(ps => ps.employee_id));
+
+    const results = { computed: 0, skipped_bank: 0, skipped_existing: 0 };
+    
     for (const emp of employees) {
+      // 1. Skip if already exists in this payrun
+      if (existingEmployeeIds.has(emp.id)) {
+        results.skipped_existing++;
+        continue;
+      }
+
+      // 2. Skip if missing bank details
+      if (!emp.bank_name || !emp.bank_acc_number) {
+        results.skipped_bank++;
+        continue;
+      }
+
       const salary = await SalaryModel.findByEmployee(emp.id);
       if (!salary || parseFloat(salary.monthly_wage) === 0) continue;
 
@@ -80,7 +97,7 @@ const PayrollService = {
       const totalDeductions = round(pfEmployee + profTax);
       const netWage = round(grossWage - totalDeductions);
 
-      const payslip = await PayrollModel.createPayslip({
+      await PayrollModel.createPayslip({
         payrun_id: payrunId, employee_id: emp.id, period_start: periodStart, period_end: periodEnd,
         total_working_days: totalWorkingDays, attendance_days: attendanceDays,
         paid_leave_days: paidLeaveDays, unpaid_leave_days: unpaidLeaveDays, payable_days: payableDays,
@@ -90,11 +107,22 @@ const PayrollService = {
         total_deductions: totalDeductions, net_wage: netWage, employer_cost: parseFloat(salary.monthly_wage),
         status: 'computed',
       });
-      payslips.push(payslip);
+      results.computed++;
     }
 
-    await PayrollModel.updatePayrunStatus(payrunId, 'computed');
-    return payslips;
+    if (results.computed > 0 || results.skipped_existing > 0) {
+      await PayrollModel.updatePayrunStatus(payrunId, 'computed');
+    }
+
+    const NotificationService = require('./notification.service');
+    NotificationService.notifyCompanyPayrollAndAdmins(
+      payrun.company_id,
+      'Payrun Computed',
+      `Payrun "${payrun.name}" has been computed and is ready for validation.`,
+      'payroll'
+    ).catch(err => console.error('Notification failed:', err));
+
+    return results;
   },
 
   async validatePayrun(payrunId) {
@@ -103,9 +131,22 @@ const PayrollService = {
 
     // Validate all payslips in this payrun
     const payslips = await PayrollModel.findPayslipsByPayrun(payrunId);
+    const NotificationService = require('./notification.service');
+
     for (const ps of payslips) {
       if (ps.status === 'computed') {
         await PayrollModel.updatePayslipStatus(ps.id, 'validated');
+        
+        // Notify employee
+        const employee = await EmployeeModel.findById(ps.employee_id);
+        if (employee && employee.user_id) {
+          NotificationService.createNotification(
+            employee.user_id,
+            'Payslip Available',
+            `Your payslip for ${payrun.name} is now available.`,
+            'payroll'
+          ).catch(err => console.error('Notification failed:', err));
+        }
       }
     }
     return PayrollModel.updatePayrunStatus(payrunId, 'validated');

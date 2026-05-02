@@ -12,6 +12,7 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import CompanyDetails from './pages/CompanyDetails';
+import Notifications from './pages/Notifications';
 
 /* Route guard — redirects to /login if unauthenticated */
 function ProtectedRoute({ children }) {
@@ -107,6 +108,7 @@ export default function App() {
           }
         />
         <Route path="profile" element={<Profile />} />
+        <Route path="notifications" element={<Notifications />} />
       </Route>
 
       {/* Default redirect */}

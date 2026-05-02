@@ -40,6 +40,12 @@ const SettingsService = {
     return CompanyModel.findById(companyId);
   },
 
+  async updateUserManager(employeeId, managerId) {
+    const EmployeeModel = require('../models/employee.model');
+    const updated = await EmployeeModel.update(employeeId, { manager_id: managerId === 'none' ? null : managerId });
+    return updated;
+  },
+
   async updateCompany(companyId, data) {
     return CompanyModel.update(companyId, data);
   },

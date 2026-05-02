@@ -29,20 +29,22 @@ const EmployeeModel = {
     const result = await query('SELECT * FROM employees WHERE user_id = $1', [userId]);
     return result.rows[0];
   },
-
   async findByCompany(companyId, search) {
     let sql = `
       SELECT e.id, e.first_name, e.last_name, e.email, e.phone, e.job_position,
              e.department, e.profile_picture, e.location, e.user_id,
+             e.bank_name, e.bank_acc_number,
              u.login_id, u.role,
              CASE
-               WHEN a.status = 'present' AND a.check_out IS NULL THEN 'present'
-               WHEN a.status = 'on_leave' THEN 'on_leave'
+               WHEN EXISTS (SELECT 1 FROM attendance a2 WHERE a2.employee_id = e.id AND a2.date = CURRENT_DATE AND a2.check_out IS NULL) THEN 'present'
+               WHEN EXISTS (SELECT 1 FROM attendance a3 WHERE a3.employee_id = e.id AND a3.date = CURRENT_DATE AND a3.status = 'on_leave') THEN 'on_leave'
+               WHEN EXISTS (SELECT 1 FROM attendance a4 WHERE a4.employee_id = e.id AND a4.date = CURRENT_DATE) THEN 'present'
                ELSE 'absent'
-             END as attendance_status
+             END as attendance_status,
+             (SELECT COALESCE(SUM(work_hours), 0) FROM attendance a5 WHERE a5.employee_id = e.id AND a5.date = CURRENT_DATE) as today_work_hours,
+             EXISTS (SELECT 1 FROM attendance a6 WHERE a6.employee_id = e.id AND a6.date = CURRENT_DATE AND a6.check_out IS NULL) as is_checked_in
       FROM employees e
       JOIN users u ON u.id = e.user_id
-      LEFT JOIN attendance a ON a.employee_id = e.id AND a.date = CURRENT_DATE
       WHERE e.company_id = $1 AND u.is_active = TRUE
     `;
     const params = [companyId];
@@ -97,6 +99,9 @@ const EmployeeModel = {
   },
 
   async updatePrivateInfo(id, fields) {
+    // Sanitize: convert empty strings to null to avoid DB type errors (especially for DATE)
+    const clean = (val) => (val === '' || val === undefined) ? null : val;
+
     const result = await query(
       `UPDATE employees SET
         date_of_birth = COALESCE($2, date_of_birth),
@@ -112,9 +117,13 @@ const EmployeeModel = {
         emp_code = COALESCE($12, emp_code),
         updated_at = NOW()
        WHERE id = $1 RETURNING *`,
-      [id, fields.date_of_birth, fields.address, fields.nationality, fields.gender,
-       fields.marital_status, fields.bank_acc_number, fields.bank_name, fields.ifsc_code,
-       fields.pan_number, fields.uan_number, fields.emp_code]
+      [
+        id, 
+        clean(fields.date_of_birth), clean(fields.address), clean(fields.nationality), 
+        clean(fields.gender), clean(fields.marital_status), clean(fields.bank_acc_number), 
+        clean(fields.bank_name), clean(fields.ifsc_code), clean(fields.pan_number), 
+        clean(fields.uan_number), clean(fields.emp_code)
+      ]
     );
     return result.rows[0];
   },

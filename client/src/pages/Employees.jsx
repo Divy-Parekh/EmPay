@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
 import { useAuth } from '../hooks/useAuth';
-import { employeeApi } from '../api/employee.api';
+import { fetchEmployees, createEmployee } from '../store/slices/employeeSlice';
 import { canEditEmployee } from '../utils/roles';
 import { getInitials } from '../utils/formatters';
 import SearchBar from '../components/common/SearchBar';
@@ -12,25 +13,25 @@ import toast from 'react-hot-toast';
 export default function Employees() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [employees, setEmployees] = useState([]);
+  const dispatch = useDispatch();
+  
+  const { list: employees, loading } = useSelector((state) => state.employees);
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
   const [showNewModal, setShowNewModal] = useState(false);
 
   /* New employee form */
-  const [newEmp, setNewEmp] = useState({ first_name: '', last_name: '', email: '' });
+  const [newEmp, setNewEmp] = useState({ 
+    first_name: '', 
+    last_name: '', 
+    email: '', 
+    role: 'employee', 
+    job_position: '' 
+  });
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
-    fetchEmployees();
-  }, []);
-
-  const fetchEmployees = async () => {
-    setLoading(true);
-    const res = await employeeApi.list();
-    if (res.success) setEmployees(res.data || []);
-    setLoading(false);
-  };
+    dispatch(fetchEmployees());
+  }, [dispatch]);
 
   const filteredEmployees = employees.filter((emp) => {
     const q = search.toLowerCase();
@@ -50,38 +51,49 @@ export default function Employees() {
       return;
     }
     setCreating(true);
-    const res = await employeeApi.create(newEmp);
-    setCreating(false);
-
-    if (res.success) {
-      toast.success(res.data?.message || 'Employee created! Credentials sent via email.');
+    try {
+      const res = await dispatch(createEmployee(newEmp)).unwrap();
+      toast.success(res?.message || 'Employee created! Credentials sent via email.');
       setShowNewModal(false);
-      setNewEmp({ first_name: '', last_name: '', email: '' });
-      fetchEmployees();
-    } else {
-      toast.error(res.error?.message || 'Failed to create employee');
+      setNewEmp({ first_name: '', last_name: '', email: '', role: 'employee', job_position: '' });
+      dispatch(fetchEmployees()); // Refresh list to get full joined object
+    } catch (err) {
+      toast.error(err?.message || 'Failed to create employee');
+    } finally {
+      setCreating(false);
     }
   };
 
   /* Status indicator component */
-  const StatusIndicator = ({ status }) => {
-    if (status === 'present') {
+  const StatusIndicator = ({ status, isCheckedIn, workHours }) => {
+    if (status === 'on_leave') {
+      return <span className="text-xs font-medium px-2 py-1 rounded bg-[rgba(59,130,246,0.15)] text-[#3B82F6] flex items-center gap-1"><Plane size={12}/> On Leave</span>;
+    }
+    
+    const hoursText = parseFloat(workHours) > 0 ? ` (${parseFloat(workHours).toFixed(1)}h)` : '';
+
+    if (isCheckedIn) {
       return (
-        <span
-          className="w-3 h-3 rounded-full animate-pulse-dot"
-          style={{ background: 'var(--color-success)', boxShadow: '0 0 8px rgba(16,185,129,0.5)' }}
-        />
+        <span className="text-xs font-medium px-2 py-1 rounded bg-[rgba(16,185,129,0.15)] text-[#34D399] flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full animate-pulse-dot" style={{ background: 'var(--color-success)', boxShadow: '0 0 8px rgba(16,185,129,0.5)' }} />
+          Present{hoursText}
+        </span>
       );
     }
-    if (status === 'on_leave') {
-      return <Plane size={14} className="text-[var(--color-info)]" />;
+
+    if (status === 'present') {
+      return (
+        <span className="text-xs font-medium px-2 py-1 rounded bg-[rgba(16,185,129,0.15)] text-[#34D399]">
+          Present{hoursText}
+        </span>
+      );
     }
+    
     /* absent / default */
     return (
-      <span
-        className="w-3 h-3 rounded-full"
-        style={{ background: 'var(--color-warning)', boxShadow: '0 0 8px rgba(245,158,11,0.3)' }}
-      />
+      <span className="text-xs font-medium px-2 py-1 rounded bg-[rgba(239,68,68,0.15)] text-[#F87171]">
+        Absent
+      </span>
     );
   };
 
@@ -185,8 +197,12 @@ export default function Employees() {
                 </div>
 
                 {/* Status indicator */}
-                <div className="shrink-0">
-                  <StatusIndicator status={emp.attendance_status || 'absent'} />
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  <StatusIndicator 
+                    status={emp.attendance_status || 'absent'} 
+                    isCheckedIn={emp.is_checked_in} 
+                    workHours={emp.today_work_hours}
+                  />
                 </div>
               </div>
             </div>
@@ -233,6 +249,33 @@ export default function Employees() {
               placeholder="jane@company.com"
               className="input-field"
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label" htmlFor="new-emp-role">Role *</label>
+              <select
+                id="new-emp-role"
+                value={newEmp.role}
+                onChange={(e) => setNewEmp({ ...newEmp, role: e.target.value })}
+                className="select-field"
+              >
+                <option value="employee">Employee</option>
+                <option value="hr_officer">HR Officer</option>
+                <option value="payroll_officer">Payroll Officer</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="new-emp-position">Job Position</label>
+              <input
+                id="new-emp-position"
+                value={newEmp.job_position}
+                onChange={(e) => setNewEmp({ ...newEmp, job_position: e.target.value })}
+                placeholder="Software Engineer"
+                className="input-field"
+              />
+            </div>
           </div>
 
           <div className="bg-[rgba(124,58,237,0.08)] rounded-lg p-3 border border-[rgba(124,58,237,0.2)]">

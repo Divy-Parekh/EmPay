@@ -6,8 +6,8 @@ const AttendanceService = {
     const employee = await EmployeeModel.findByUserId(userId);
     if (!employee) throw Object.assign(new Error('Employee not found'), { status: 404 });
 
-    const existing = await AttendanceModel.findTodayByEmployee(employee.id);
-    if (existing && existing.check_in && !existing.check_out) {
+    const existingActive = await AttendanceModel.findActiveSession(employee.id);
+    if (existingActive) {
       throw Object.assign(new Error('Already checked in'), { status: 400, code: 'VALIDATION_ERROR' });
     }
 
@@ -56,12 +56,18 @@ const AttendanceService = {
     const employee = await EmployeeModel.findByUserId(userId);
     if (!employee) return { is_checked_in: false };
 
-    const today = await AttendanceModel.findTodayByEmployee(employee.id);
+    const sessions = await AttendanceModel.findTodayByEmployee(employee.id);
+    const activeSession = sessions.find(s => !s.check_out);
+    
+    // Sum up work hours for today
+    const totalTodayHours = sessions.reduce((sum, s) => sum + (parseFloat(s.work_hours) || 0), 0);
+
     return {
-      is_checked_in: today ? (today.check_in && !today.check_out) : false,
-      check_in: today?.check_in || null,
-      check_out: today?.check_out || null,
-      work_hours: today?.work_hours || 0,
+      is_checked_in: !!activeSession,
+      check_in: activeSession?.check_in || (sessions.length > 0 ? sessions[0].check_in : null),
+      check_out: activeSession ? null : (sessions.length > 0 ? sessions[0].check_out : null),
+      work_hours: totalTodayHours,
+      sessions_count: sessions.length
     };
   },
 

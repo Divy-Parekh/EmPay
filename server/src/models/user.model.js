@@ -37,7 +37,7 @@ const UserModel = {
   async findByCompany(companyId) {
     const result = await query(
       `SELECT u.id, u.login_id, u.email, u.role, u.is_active, u.created_at,
-              e.first_name, e.last_name
+              e.id as employee_id, e.first_name, e.last_name, e.manager_id
        FROM users u
        LEFT JOIN employees e ON e.user_id = u.id
        WHERE u.company_id = $1

@@ -30,6 +30,21 @@ const TimeOffModel = {
     return result.rows;
   },
 
+  async findAllBalancesByCompany(companyId, year) {
+    const result = await query(
+      `SELECT b.*, t.name as type_name, t.is_paid,
+              (b.total_allocated - b.used) as remaining,
+              (e.first_name || ' ' || e.last_name) as employee_name
+       FROM time_off_balances b
+       JOIN time_off_types t ON t.id = b.time_off_type_id
+       JOIN employees e ON e.id = b.employee_id
+       WHERE e.company_id = $1 AND b.year = $2
+       ORDER BY e.first_name, t.name`,
+      [companyId, year]
+    );
+    return result.rows;
+  },
+
   async upsertBalance({ employee_id, time_off_type_id, total_allocated, year }) {
     const result = await query(
       `INSERT INTO time_off_balances (employee_id, time_off_type_id, total_allocated, year)

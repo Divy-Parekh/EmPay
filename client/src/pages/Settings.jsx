@@ -23,6 +23,16 @@ export default function Settings() {
     else toast.error(res.error?.message || 'Failed to update role');
   };
 
+  const handleManagerChange = async (userId, employeeId, managerId) => {
+    if (!employeeId) {
+      toast.error('User has no employee profile');
+      return;
+    }
+    const res = await settingsApi.updateManager(userId, employeeId, managerId);
+    if (res.success) { toast.success('Manager updated'); fetchUsers(); }
+    else toast.error(res.error?.message || 'Failed to update manager');
+  };
+
   return (
     <div className="animate-fade-in space-y-6">
       <div className="flex items-center gap-3">
@@ -34,7 +44,7 @@ export default function Settings() {
         <div className="table-container">
           <table className="data-table">
             <thead>
-              <tr><th>User Name</th><th>Login ID</th><th>Email</th><th>Role</th></tr>
+              <tr><th>User Name</th><th>Login ID</th><th>Role</th><th>Reporting To (Manager)</th></tr>
             </thead>
             <tbody>
               {loading ? (
@@ -43,19 +53,34 @@ export default function Settings() {
                 <tr><td colSpan={4} className="text-center py-8 text-[var(--text-secondary)]">No users found</td></tr>
               ) : users.map(u => (
                 <tr key={u.id}>
-                  <td className="font-medium">{u.name || `${u.first_name || ''} ${u.last_name || ''}`}</td>
+                  <td className="font-medium">{u.first_name ? `${u.first_name} ${u.last_name}` : u.login_id}</td>
                   <td className="text-[var(--text-secondary)]">{u.login_id}</td>
-                  <td className="text-[var(--text-secondary)]">{u.email}</td>
                   <td>
                     <select
                       value={u.role}
                       onChange={e => handleRoleChange(u.id, e.target.value)}
                       className="select-field w-auto text-sm"
-                      id={`role-select-${u.id}`}
                     >
                       {Object.entries(ROLE_LABELS).map(([val, label]) => (
                         <option key={val} value={val}>{label}</option>
                       ))}
+                    </select>
+                  </td>
+                  <td>
+                    <select
+                      value={u.manager_id || 'none'}
+                      onChange={e => handleManagerChange(u.id, u.employee_id, e.target.value)}
+                      className="select-field w-auto text-sm"
+                      disabled={!u.employee_id}
+                    >
+                      <option value="none">No Manager</option>
+                      {users
+                        .filter(m => m.employee_id && m.employee_id !== u.employee_id)
+                        .map(m => (
+                          <option key={m.employee_id} value={m.employee_id}>
+                            {m.first_name} {m.last_name}
+                          </option>
+                        ))}
                     </select>
                   </td>
                 </tr>

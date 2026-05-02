@@ -1,21 +1,26 @@
 import { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { useAuth } from '../hooks/useAuth';
 import { timeoffApi } from '../api/timeoff.api';
+import { fetchTimeOffData, approveRequest, rejectRequest, addRequestLocally, fetchAllBalances } from '../store/slices/timeOffSlice';
+import { fetchEmployees } from '../store/slices/employeeSlice';
 import { canApproveTimeOff } from '../utils/roles';
 import { formatDate } from '../utils/formatters';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
-import { Plus, Check, X, Upload } from 'lucide-react';
+import { Plus, Check, X, Upload, Coins } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function TimeOff() {
   const { user, employee } = useAuth();
+  const dispatch = useDispatch();
   const isApprover = canApproveTimeOff(user?.role);
+  const canAllocate = ['admin', 'hr_officer'].includes(user?.role);
+  
+  const { requests, balances, allBalances, types, loading } = useSelector((state) => state.timeOff);
+  const { list: employees } = useSelector((state) => state.employees);
+  
   const [activeSubTab, setActiveSubTab] = useState('Time Off');
-  const [requests, setRequests] = useState([]);
-  const [balances, setBalances] = useState([]);
-  const [types, setTypes] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [showNewModal, setShowNewModal] = useState(false);
   const [showAllocModal, setShowAllocModal] = useState(false);
 
@@ -27,18 +32,26 @@ export default function TimeOff() {
   /* Allocation form */
   const [allocForm, setAllocForm] = useState({ employee_id: '', time_off_type_id: '', days: 0 });
 
-  useEffect(() => { fetchData(); }, []);
+  /* Allocation Filter */
+  const [typeFilter, setTypeFilter] = useState('all');
 
-  const fetchData = async () => {
-    setLoading(true);
-    const [reqRes, balRes, typeRes] = await Promise.all([
-      timeoffApi.getRequests(), timeoffApi.getBalances(), timeoffApi.getTypes()
-    ]);
-    if (reqRes.success) setRequests(reqRes.data || []);
-    if (balRes.success) setBalances(balRes.data || []);
-    if (typeRes.success) setTypes(typeRes.data || []);
-    setLoading(false);
-  };
+  useEffect(() => { 
+    dispatch(fetchTimeOffData()); 
+  }, [dispatch]);
+
+  // Fetch employees if they are an approver (for the dropdown)
+  useEffect(() => {
+    if (isApprover) {
+      dispatch(fetchEmployees());
+    }
+  }, [dispatch, isApprover]);
+
+  // Fetch company balances when switching to Allocation tab
+  useEffect(() => {
+    if (activeSubTab === 'Allocation') {
+      dispatch(fetchAllBalances());
+    }
+  }, [dispatch, activeSubTab]);
 
   const handleCreateRequest = async (e) => {
     e.preventDefault();
@@ -47,40 +60,88 @@ export default function TimeOff() {
     }
     setSubmitting(true);
     let res;
-    if (attachment) {
-      const fd = new FormData();
-      Object.entries(reqForm).forEach(([k, v]) => fd.append(k, v));
-      fd.append('attachment', attachment);
-      res = await timeoffApi.uploadRequest(fd);
-    } else {
-      res = await timeoffApi.createRequest(reqForm);
+    try {
+      if (attachment) {
+        const fd = new FormData();
+        Object.entries(reqForm).forEach(([k, v]) => fd.append(k, v));
+        fd.append('attachment', attachment);
+        res = await timeoffApi.uploadRequest(fd);
+      } else {
+        res = await timeoffApi.createRequest(reqForm);
+      }
+      if (res.success) {
+        toast.success('Time off request submitted'); 
+        setShowNewModal(false);
+        setReqForm({ time_off_type_id: '', start_date: '', end_date: '', allocation_days: 1, note: '' });
+        setAttachment(null); 
+        dispatch(fetchTimeOffData());
+      } else toast.error(res.error?.message || 'Failed to submit');
+    } catch(err) {
+       toast.error('Connection error');
     }
     setSubmitting(false);
-    if (res.success) {
-      toast.success('Time off request submitted'); setShowNewModal(false);
-      setReqForm({ time_off_type_id: '', start_date: '', end_date: '', allocation_days: 1, note: '' });
-      setAttachment(null); fetchData();
-    } else toast.error(res.error?.message || 'Failed to submit');
   };
 
   const handleApprove = async (id) => {
-    const res = await timeoffApi.approveRequest(id);
-    if (res.success) { toast.success('Approved'); fetchData(); }
-    else toast.error('Failed to approve');
+    try {
+      await dispatch(approveRequest(id)).unwrap();
+      toast.success('Approved');
+    } catch(err) {
+      toast.error('Failed to approve');
+    }
   };
 
   const handleReject = async (id) => {
-    const res = await timeoffApi.rejectRequest(id);
-    if (res.success) { toast.success('Rejected'); fetchData(); }
-    else toast.error('Failed to reject');
+    try {
+      await dispatch(rejectRequest(id)).unwrap();
+      toast.success('Rejected');
+    } catch(err) {
+      toast.error('Failed to reject');
+    }
   };
 
   const handleAllocate = async (e) => {
     e.preventDefault();
+    if (!allocForm.employee_id || !allocForm.time_off_type_id) {
+      toast.error('Please select employee and leave type');
+      return;
+    }
     const res = await timeoffApi.allocate(allocForm);
-    if (res.success) { toast.success('Leaves allocated'); setShowAllocModal(false); fetchData(); }
+    if (res.success) { 
+      toast.success('Leaves allocated'); 
+      setShowAllocModal(false); 
+      setAllocForm({ employee_id: '', time_off_type_id: '', days: 0 }); // Reset form
+      dispatch(fetchAllBalances()); 
+    }
     else toast.error(res.error?.message || 'Failed to allocate');
   };
+
+  // Group balances by employee
+  const groupedBalances = allBalances.reduce((acc, b) => {
+    if (!acc[b.employee_id]) {
+      acc[b.employee_id] = {
+        name: b.employee_name,
+        balances: {},
+        total: { allocated: 0, used: 0, remaining: 0 }
+      };
+    }
+    acc[b.employee_id].balances[b.time_off_type_id] = b;
+    acc[b.employee_id].total.allocated += parseFloat(b.total_allocated || 0);
+    acc[b.employee_id].total.used += parseFloat(b.used || 0);
+    acc[b.employee_id].total.remaining += parseFloat(b.remaining || 0);
+    return acc;
+  }, {});
+
+  // State to track per-employee filter selection
+  const [rowFilters, setRowFilters] = useState({}); // { employeeId: typeId | 'all' }
+
+  const handleRowFilterChange = (empId, typeId) => {
+    setRowFilters(prev => ({ ...prev, [empId]: typeId }));
+  };
+
+  const employeeIds = Object.keys(groupedBalances).sort((a, b) => 
+    groupedBalances[a].name.localeCompare(groupedBalances[b].name)
+  );
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -89,19 +150,22 @@ export default function TimeOff() {
         <div className="flex gap-2">
           {isApprover && (
             <div className="flex gap-1 mr-4">
-              {['Time Off', 'Allocation'].map(t => (
-                <button key={t} onClick={() => setActiveSubTab(t)} className={`tab-item ${activeSubTab === t ? 'active' : ''}`}>{t}</button>
-              ))}
+              <button onClick={() => setActiveSubTab('Time Off')} className={`tab-item ${activeSubTab === 'Time Off' ? 'active' : ''}`}>Time Off</button>
+              {canAllocate && (
+                <button onClick={() => setActiveSubTab('Allocation')} className={`tab-item ${activeSubTab === 'Allocation' ? 'active' : ''}`}>Allocation</button>
+              )}
             </div>
           )}
-          <button onClick={() => isApprover && activeSubTab === 'Allocation' ? setShowAllocModal(true) : setShowNewModal(true)}
+          <button 
+            onClick={() => canAllocate && activeSubTab === 'Allocation' ? setShowAllocModal(true) : setShowNewModal(true)}
             className="btn-primary flex items-center gap-2" id="timeoff-new-btn">
-            <Plus size={16} />New
+            <Plus size={16} />
+            {canAllocate && activeSubTab === 'Allocation' ? 'Allocate Time Off' : 'New Request'}
           </button>
         </div>
       </div>
 
-      {/* Balance Cards */}
+      {/* Personal Balance Cards (Always show for current user) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {balances.map((b, i) => (
           <div key={i} className="card p-4">
@@ -112,42 +176,101 @@ export default function TimeOff() {
         ))}
       </div>
 
-      {/* Requests Table */}
+      {/* Main Content Area */}
       <div className="card">
         <div className="table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                {isApprover && <th>Employee</th>}
-                <th>Start Date</th><th>End Date</th><th>Type</th><th>Days</th><th>Status</th>
-                {isApprover && <th>Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={7} className="text-center py-8 text-[var(--text-secondary)]">Loading...</td></tr>
-              ) : requests.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-8 text-[var(--text-secondary)]">No time off requests</td></tr>
-              ) : requests.map(r => (
-                <tr key={r.id}>
-                  {isApprover && <td className="font-medium">{r.employee_name}</td>}
-                  <td>{formatDate(r.start_date)}</td><td>{formatDate(r.end_date)}</td>
-                  <td>{r.type_name || r.time_off_type}</td><td>{r.allocation_days}</td>
-                  <td><StatusBadge status={r.status} /></td>
-                  {isApprover && (
-                    <td>
-                      {r.status === 'pending' && (
-                        <div className="flex gap-2">
-                          <button onClick={() => handleApprove(r.id)} className="p-1.5 rounded-lg bg-[rgba(16,185,129,0.15)] text-[#34D399] hover:bg-[rgba(16,185,129,0.25)] transition-colors" title="Approve"><Check size={16} /></button>
-                          <button onClick={() => handleReject(r.id)} className="p-1.5 rounded-lg bg-[rgba(239,68,68,0.15)] text-[#F87171] hover:bg-[rgba(239,68,68,0.25)] transition-colors" title="Reject"><X size={16} /></button>
-                        </div>
-                      )}
-                    </td>
-                  )}
+          {activeSubTab === 'Time Off' ? (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  {isApprover && <th>Employee</th>}
+                  <th>Start Date</th><th>End Date</th><th>Type</th><th>Days</th><th>Status</th>
+                  {isApprover && <th>Actions</th>}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={7} className="text-center py-8 text-[var(--text-secondary)]">Loading...</td></tr>
+                ) : requests.length === 0 ? (
+                  <tr><td colSpan={7} className="text-center py-8 text-[var(--text-secondary)]">No time off requests</td></tr>
+                ) : requests.map(r => (
+                  <tr key={r.id}>
+                    {isApprover && <td className="font-medium">{r.employee_name}</td>}
+                    <td>{formatDate(r.start_date)}</td><td>{formatDate(r.end_date)}</td>
+                    <td>{r.type_name || r.time_off_type}</td><td>{r.allocation_days}</td>
+                    <td><StatusBadge status={r.status} /></td>
+                    {isApprover && (
+                      <td>
+                        {r.status === 'pending' && (
+                          <div className="flex gap-2">
+                            <button onClick={() => handleApprove(r.id)} className="p-1.5 rounded-lg bg-[rgba(16,185,129,0.15)] text-[#34D399] hover:bg-[rgba(16,185,129,0.25)] transition-colors" title="Approve"><Check size={16} /></button>
+                            <button onClick={() => handleReject(r.id)} className="p-1.5 rounded-lg bg-[rgba(239,68,68,0.15)] text-[#F87171] hover:bg-[rgba(239,68,68,0.25)] transition-colors" title="Reject"><X size={16} /></button>
+                          </div>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            /* Allocation Tab Content - Grouped View */
+            <div className="space-y-4">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th style={{ width: '200px' }}>View Leaves</th>
+                    <th>Total Allocated</th>
+                    <th>Used</th>
+                    <th>Remaining</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr><td colSpan={5} className="text-center py-8 text-[var(--text-secondary)]">Loading...</td></tr>
+                  ) : employeeIds.length === 0 ? (
+                    <tr><td colSpan={5} className="text-center py-8 text-[var(--text-secondary)]">No allocations yet</td></tr>
+                  ) : employeeIds.map((empId) => {
+                    const empData = groupedBalances[empId];
+                    const selectedFilter = rowFilters[empId] || 'all';
+                    
+                    let displayData;
+                    if (selectedFilter === 'all') {
+                      displayData = empData.total;
+                    } else {
+                      displayData = empData.balances[selectedFilter] || { total_allocated: 0, used: 0, remaining: 0 };
+                    }
+
+                    return (
+                      <tr key={empId}>
+                        <td className="font-medium">{empData.name}</td>
+                        <td>
+                          <select 
+                            value={selectedFilter}
+                            onChange={(e) => handleRowFilterChange(empId, e.target.value)}
+                            className="select-field text-xs py-1 h-auto min-w-[120px]"
+                          >
+                            <option value="all">Combined Total</option>
+                            {types.map(t => (
+                              <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="font-semibold">{displayData.total_allocated || displayData.allocated}</td>
+                        <td className="text-[var(--text-secondary)]">{displayData.used}</td>
+                        <td>
+                          <span className={`font-bold ${(displayData.remaining || 0) > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
+                            {displayData.remaining}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 
@@ -185,10 +308,31 @@ export default function TimeOff() {
       </Modal>
 
       {/* Allocation Modal (Admin/HR) */}
-      <Modal isOpen={showAllocModal} onClose={() => setShowAllocModal(false)} title="Allocate Leaves">
+      <Modal 
+        isOpen={showAllocModal} 
+        onClose={() => {
+          setShowAllocModal(false);
+          setAllocForm({ employee_id: '', time_off_type_id: '', days: 0 });
+        }} 
+        title="Allocate Leaves"
+      >
         <form onSubmit={handleAllocate} className="space-y-4">
-          <div><label className="label">Employee ID</label><input value={allocForm.employee_id} onChange={e => setAllocForm({...allocForm, employee_id: e.target.value})} className="input-field" placeholder="Employee UUID" /></div>
-          <div><label className="label">Leave Type</label>
+          <div>
+            <label className="label">Select Employee *</label>
+            <select 
+              value={allocForm.employee_id} 
+              onChange={e => setAllocForm({...allocForm, employee_id: e.target.value})} 
+              className="select-field"
+            >
+              <option value="">Select employee...</option>
+              {employees.map(emp => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.first_name} {emp.last_name} ({emp.job_position || (emp.role === 'admin' ? 'Admin' : 'Employee')})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div><label className="label">Leave Type *</label>
             <select value={allocForm.time_off_type_id} onChange={e => setAllocForm({...allocForm, time_off_type_id: e.target.value})} className="select-field">
               <option value="">Select type...</option>
               {types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -196,7 +340,16 @@ export default function TimeOff() {
           </div>
           <div><label className="label">Days to Allocate</label><input type="number" value={allocForm.days} onChange={e => setAllocForm({...allocForm, days: Number(e.target.value)})} className="input-field" /></div>
           <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={() => setShowAllocModal(false)} className="btn-secondary">Cancel</button>
+            <button 
+              type="button" 
+              onClick={() => {
+                setShowAllocModal(false);
+                setAllocForm({ employee_id: '', time_off_type_id: '', days: 0 });
+              }} 
+              className="btn-secondary"
+            >
+              Cancel
+            </button>
             <button type="submit" className="btn-primary" id="alloc-submit">Allocate</button>
           </div>
         </form>

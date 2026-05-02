@@ -1,22 +1,37 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../../hooks/useAuth';
 import { getInitials } from '../../utils/formatters';
-import { Menu, User, LogOut, ChevronDown } from 'lucide-react';
+import { Menu, User, LogOut, Bell, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { fetchNotifications, markAsRead } from '../../store/slices/notificationSlice';
 
 export default function Navbar({ onMenuToggle }) {
+  const dispatch = useDispatch();
   const { user, employee, is_checked_in, toggleCheckIn, logout } = useAuth();
+  const { items: notifications, unreadCount } = useSelector((state) => state.notification);
+  
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
+  
   const dropdownRef = useRef(null);
+  const notifDropdownRef = useRef(null);
   const navigate = useNavigate();
 
-  /* Close dropdown on outside click */
+  useEffect(() => {
+    dispatch(fetchNotifications());
+  }, [dispatch]);
+
+  /* Close dropdowns on outside click */
   useEffect(() => {
     function handleClick(e) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setShowDropdown(false);
+      }
+      if (notifDropdownRef.current && !notifDropdownRef.current.contains(e.target)) {
+        setShowNotifDropdown(false);
       }
     }
     document.addEventListener('mousedown', handleClick);
@@ -25,12 +40,13 @@ export default function Navbar({ onMenuToggle }) {
 
   const handleToggleCheckIn = async () => {
     setCheckingIn(true);
-    const res = await toggleCheckIn();
-    setCheckingIn(false);
-    if (res?.success) {
+    try {
+      await toggleCheckIn();
       toast.success(is_checked_in ? 'Checked out successfully' : 'Checked in successfully');
-    } else {
-      toast.error(res?.error?.message || 'Failed to update status');
+    } catch (err) {
+      toast.error(err?.message || 'Failed to update status');
+    } finally {
+      setCheckingIn(false);
     }
   };
 
@@ -38,6 +54,12 @@ export default function Navbar({ onMenuToggle }) {
     logout();
     navigate('/login');
     toast.success('Logged out');
+  };
+
+  const handleNotificationClick = (id, isRead) => {
+    if (!isRead) {
+      dispatch(markAsRead(id));
+    }
   };
 
   return (
@@ -64,6 +86,83 @@ export default function Navbar({ onMenuToggle }) {
 
       {/* Right — Status + Avatar */}
       <div className="flex items-center gap-3">
+        {/* Notifications Dropdown */}
+        <div className="relative" ref={notifDropdownRef}>
+          <button
+            onClick={() => {
+              setShowNotifDropdown(!showNotifDropdown);
+              setShowDropdown(false);
+            }}
+            className="p-2 rounded-lg hover:bg-[var(--bg-card-hover)] transition-colors relative"
+            title="Notifications"
+          >
+            <Bell size={20} className="text-[var(--text-secondary)]" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1.5 flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+              </span>
+            )}
+          </button>
+
+          {showNotifDropdown && (
+            <div
+              className="absolute right-0 top-full mt-2 w-80 rounded-xl overflow-hidden animate-slide-up"
+              style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-color)',
+                boxShadow: 'var(--shadow-modal)',
+              }}
+            >
+              <div className="px-4 py-3 border-b border-[var(--border-color)] flex justify-between items-center">
+                <h3 className="font-semibold text-white">Notifications</h3>
+                {unreadCount > 0 && (
+                  <span className="text-xs bg-[rgba(59,130,246,0.15)] text-[#3B82F6] px-2 py-0.5 rounded-full font-medium">
+                    {unreadCount} new
+                  </span>
+                )}
+              </div>
+              <div className="max-h-80 overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="px-4 py-6 text-center text-sm text-[var(--text-secondary)]">
+                    No notifications
+                  </div>
+                ) : (
+                  notifications.slice(0, 4).map((notif) => (
+                    <div
+                      key={notif.id}
+                      onClick={() => handleNotificationClick(notif.id, notif.is_read)}
+                      className={`px-4 py-3 border-b border-[var(--border-color)] cursor-pointer transition-colors ${
+                        !notif.is_read ? 'bg-[var(--bg-card-hover)]' : 'hover:bg-[var(--bg-card-hover)]'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-1">
+                        <p className={`text-sm ${!notif.is_read ? 'font-semibold text-white' : 'font-medium text-[var(--text-primary)]'}`}>
+                          {notif.title}
+                        </p>
+                        {!notif.is_read && <span className="w-2 h-2 rounded-full bg-blue-500 mt-1 shrink-0" />}
+                      </div>
+                      <p className="text-xs text-[var(--text-secondary)] line-clamp-2 leading-relaxed">
+                        {notif.message}
+                      </p>
+                      <p className="text-[10px] text-[var(--text-muted)] mt-2">
+                        {new Date(notif.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+              <Link
+                to="/dashboard/notifications"
+                onClick={() => setShowNotifDropdown(false)}
+                className="block text-center px-4 py-3 text-sm text-[#3B82F6] hover:bg-[var(--bg-card-hover)] font-medium transition-colors border-t border-[var(--border-color)]"
+              >
+                View all notifications
+              </Link>
+            </div>
+          )}
+        </div>
+
         {/* Check In / Out button */}
         <button
           onClick={handleToggleCheckIn}
@@ -94,7 +193,10 @@ export default function Navbar({ onMenuToggle }) {
         {/* Profile dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
-            onClick={() => setShowDropdown(!showDropdown)}
+            onClick={() => {
+              setShowDropdown(!showDropdown);
+              setShowNotifDropdown(false);
+            }}
             className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-[var(--bg-card-hover)] transition-colors"
             id="navbar-profile-btn"
           >
@@ -115,12 +217,6 @@ export default function Navbar({ onMenuToggle }) {
                 {getInitials(employee?.first_name, employee?.last_name)}
               </div>
             )}
-            <ChevronDown
-              size={14}
-              className={`text-[var(--text-secondary)] transition-transform duration-200
-                ${showDropdown ? 'rotate-180' : ''}
-              `}
-            />
           </button>
 
           {/* Dropdown menu */}

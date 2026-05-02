@@ -27,6 +27,16 @@ router.get('/balances', authenticate, async (req, res) => {
   }
 });
 
+// GET /api/time-off/all-balances
+router.get('/all-balances', authenticate, rbac(['admin', 'hr_officer'], 'time_off'), async (req, res) => {
+  try {
+    const balances = await TimeOffService.getAllBalances(req.user.company_id);
+    res.json({ success: true, data: balances });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: { message: err.message } });
+  }
+});
+
 // POST /api/time-off/requests
 router.post('/requests', authenticate, upload.single('attachment'), validate(createTimeOffRequestSchema), async (req, res) => {
   try {

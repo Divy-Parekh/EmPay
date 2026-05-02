@@ -14,23 +14,36 @@ const TimeOffService = {
     return TimeOffModel.getBalances(employee.id, year);
   },
 
+  async getAllBalances(companyId) {
+    const year = new Date().getFullYear();
+    return TimeOffModel.findAllBalancesByCompany(companyId, year);
+  },
+
   async createRequest(userId, { time_off_type_id, start_date, end_date, allocation_days, attachment_url, note }) {
     const employee = await EmployeeModel.findByUserId(userId);
     if (!employee) throw Object.assign(new Error('Employee not found'), { status: 404 });
 
     // Validate balance
-    const year = new Date(start_date).getFullYear();
-    const balances = await TimeOffModel.getBalances(employee.id, year);
-    const typeBalance = balances.find(b => b.time_off_type_id === time_off_type_id);
+    const types = await TimeOffModel.getTypes(employee.company_id);
+    const selectedType = types.find(t => t.id === time_off_type_id);
+    if (!selectedType) throw Object.assign(new Error('Invalid leave type'), { status: 400 });
 
-    if (typeBalance) {
-      const remaining = parseFloat(typeBalance.total_allocated) - parseFloat(typeBalance.used);
+    if (selectedType.is_paid) {
+      const year = new Date(start_date).getFullYear();
+      const balances = await TimeOffModel.getBalances(employee.id, year);
+      const typeBalance = balances.find(b => b.time_off_type_id === time_off_type_id);
+
+      const allocated = typeBalance ? parseFloat(typeBalance.total_allocated) : 0;
+      const used = typeBalance ? parseFloat(typeBalance.used) : 0;
+      const remaining = allocated - used;
+
       if (allocation_days > remaining) {
         throw Object.assign(new Error(`Insufficient leave balance. Available: ${remaining} days`), { status: 400, code: 'VALIDATION_ERROR' });
       }
     }
+    // If unpaid, we don't check balance, as it's allowed but deducted from salary.
 
-    return TimeOffModel.createRequest({
+    const request = await TimeOffModel.createRequest({
       employee_id: employee.id,
       time_off_type_id: time_off_type_id,
       start_date: start_date,
@@ -39,6 +52,16 @@ const TimeOffService = {
       attachment_url: attachment_url,
       note,
     });
+
+    const NotificationService = require('./notification.service');
+    NotificationService.notifyCompanyAdminsAndHR(
+      employee.company_id,
+      'New Time Off Request',
+      `${employee.first_name} ${employee.last_name} requested ${allocation_days} days off.`,
+      'timeoff'
+    ).catch(err => console.error('Notification failed:', err));
+
+    return request;
   },
 
   async getRequests(userId, companyId, role) {
@@ -61,6 +84,18 @@ const TimeOffService = {
     const year = new Date(request.start_date).getFullYear();
     await TimeOffModel.updateUsedDays(request.employee_id, request.time_off_type_id, year, parseFloat(request.allocation_days));
 
+    // Notify employee
+    const NotificationService = require('./notification.service');
+    const employee = await EmployeeModel.findById(request.employee_id);
+    if (employee && employee.user_id) {
+      NotificationService.createNotification(
+        employee.user_id,
+        'Time Off Approved',
+        `Your time off request starting on ${request.start_date.toISOString().split('T')[0]} has been approved.`,
+        'timeoff'
+      ).catch(err => console.error('Notification failed:', err));
+    }
+
     return updated;
   },
 
@@ -69,7 +104,21 @@ const TimeOffService = {
     if (!request) throw Object.assign(new Error('Request not found'), { status: 404 });
     if (request.status !== 'pending') throw Object.assign(new Error('Request is not pending'), { status: 400 });
 
-    return TimeOffModel.updateRequestStatus(requestId, 'rejected', rejectedById);
+    const updated = await TimeOffModel.updateRequestStatus(requestId, 'rejected', rejectedById);
+
+    // Notify employee
+    const NotificationService = require('./notification.service');
+    const employee = await EmployeeModel.findById(request.employee_id);
+    if (employee && employee.user_id) {
+      NotificationService.createNotification(
+        employee.user_id,
+        'Time Off Rejected',
+        `Your time off request starting on ${request.start_date.toISOString().split('T')[0]} was rejected.`,
+        'timeoff'
+      ).catch(err => console.error('Notification failed:', err));
+    }
+
+    return updated;
   },
 
   async allocateLeave(companyId, { employee_id, time_off_type_id, days, year }) {

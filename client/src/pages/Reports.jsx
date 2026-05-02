@@ -1,13 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { reportsApi } from '../api/reports.api';
-import { employeeApi } from '../api/employee.api';
+import { fetchEmployees } from '../store/slices/employeeSlice';
 import { formatCurrency } from '../utils/formatters';
 import { useReactToPrint } from 'react-to-print';
 import { Printer, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function Reports() {
-  const [employees, setEmployees] = useState([]);
+  const dispatch = useDispatch();
+  const { list: employees } = useSelector((state) => state.employees);
+  
   const [selectedEmp, setSelectedEmp] = useState('');
   const [year, setYear] = useState(new Date().getFullYear());
   const [report, setReport] = useState(null);
@@ -20,8 +23,8 @@ export default function Reports() {
   });
 
   useEffect(() => {
-    employeeApi.list().then(res => { if (res.success) setEmployees(res.data || []); });
-  }, []);
+    if (employees.length === 0) dispatch(fetchEmployees());
+  }, [dispatch, employees.length]);
 
   const handleGenerate = async () => {
     if (!selectedEmp) { toast.error('Select an employee'); return; }

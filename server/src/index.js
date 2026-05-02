@@ -31,6 +31,7 @@ app.use('/api/time-off', require('./routes/timeoff.routes'));
 app.use('/api/payroll', require('./routes/payroll.routes'));
 app.use('/api/reports', require('./routes/reports.routes'));
 app.use('/api/settings', require('./routes/settings.routes'));
+app.use('/api/notifications', require('./routes/notification.routes'));
 
 // ─── 404 Handler ────────────────────────────────────────
 app.use((req, res) => {

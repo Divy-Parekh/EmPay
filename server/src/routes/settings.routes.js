@@ -32,6 +32,17 @@ router.put('/users/:id/role', authenticate, rbac(['admin'], 'settings'), async (
   }
 });
 
+// PUT /api/settings/users/:id/manager
+router.put('/users/:id/manager', authenticate, rbac(['admin'], 'settings'), async (req, res) => {
+  try {
+    const { manager_id, employee_id } = req.body;
+    const result = await SettingsService.updateUserManager(employee_id, manager_id);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: { message: err.message } });
+  }
+});
+
 // PUT /api/settings/users/:id/permissions
 router.put('/users/:id/permissions', authenticate, rbac(['admin'], 'settings'), async (req, res) => {
   try {

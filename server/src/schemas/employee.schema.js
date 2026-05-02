@@ -10,6 +10,7 @@ const createEmployeeSchema = z.object({
   manager_id: z.string().uuid().optional().nullable(),
   location: z.string().optional(),
   date_of_joining: z.string().optional(),
+  role: z.enum(['admin', 'hr_officer', 'payroll_officer', 'employee']).optional(),
 });
 
 const updateEmployeeSchema = z.object({

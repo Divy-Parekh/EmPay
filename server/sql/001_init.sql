@@ -125,8 +125,7 @@ CREATE TABLE IF NOT EXISTS attendance (
   extra_hours   DECIMAL(5,2) DEFAULT 0,
   status        VARCHAR(20) DEFAULT 'present'
                 CHECK (status IN ('present','absent','on_leave','half_day')),
-  created_at    TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(employee_id, date)
+  created_at    TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ============================================

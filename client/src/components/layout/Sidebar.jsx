@@ -18,7 +18,7 @@ const navItems = [
   { to: '/dashboard/time-off', label: 'Time Off', icon: CalendarOff, module: 'time_off' },
   { to: '/dashboard/payroll', label: 'Payroll', icon: Wallet, module: 'payroll' },
   { to: '/dashboard/reports', label: 'Reports', icon: BarChart3, module: 'reports' },
-  { to: '/dashboard/settings', label: 'Settings', icon: SettingsIcon, module: 'settings' },
+  { to: '/dashboard/settings', label: 'User Settings', icon: SettingsIcon, module: 'settings' },
   { to: '/dashboard/company', label: 'Company', icon: Building2, module: 'company' },
 ];
 
