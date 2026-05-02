@@ -16,18 +16,21 @@ export default function Attendance() {
   const { adminRecords, myRecords, summary, loading } = useSelector((state) => state.attendance);
   const records = isAdmin ? adminRecords : myRecords;
 
-  const today = new Date().toISOString().split('T')[0];
+  // Use local date (YYYY-MM-DD) instead of UTC to avoid timezone mismatches
+  const today = new Date().toLocaleDateString('en-CA'); 
   const [date, setDate] = useState(today);
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
 
+  const { is_checked_in } = useAuth();
+  
   useEffect(() => {
     if (isAdmin) {
       dispatch(fetchAllAttendance({ date }));
     } else {
       dispatch(fetchMyAttendance({ month, year }));
     }
-  }, [dispatch, isAdmin, date, month, year]);
+  }, [dispatch, isAdmin, date, month, year, is_checked_in]);
 
   const handleMonthChange = (dir) => {
     let m = month + dir, y = year;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
@@ -6,7 +6,11 @@ import { useAuth } from '../../hooks/useAuth';
 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { loading } = useAuth();
+  const { loading, fetchCheckInStatus } = useAuth();
+
+  useEffect(() => {
+    fetchCheckInStatus();
+  }, []);
 
   if (loading) {
     return (

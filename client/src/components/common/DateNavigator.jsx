@@ -3,15 +3,15 @@ import { getDayName } from '../../utils/formatters';
 
 export default function DateNavigator({ date, onDateChange, showDay = true }) {
   const handlePrev = () => {
-    const d = new Date(date);
+    const d = new Date(date + 'T00:00:00'); // Ensure we parse as local midnight
     d.setDate(d.getDate() - 1);
-    onDateChange(d.toISOString().split('T')[0]);
+    onDateChange(d.toLocaleDateString('en-CA'));
   };
 
   const handleNext = () => {
-    const d = new Date(date);
+    const d = new Date(date + 'T00:00:00');
     d.setDate(d.getDate() + 1);
-    onDateChange(d.toISOString().split('T')[0]);
+    onDateChange(d.toLocaleDateString('en-CA'));
   };
 
   return (

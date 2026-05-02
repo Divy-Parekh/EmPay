@@ -41,8 +41,8 @@ export default function Navbar({ onMenuToggle }) {
   const handleToggleCheckIn = async () => {
     setCheckingIn(true);
     try {
-      await toggleCheckIn();
-      toast.success(is_checked_in ? 'Checked out successfully' : 'Checked in successfully');
+      const result = await toggleCheckIn();
+      toast.success(result.is_checked_in ? 'Checked in successfully' : 'Checked out successfully');
     } catch (err) {
       toast.error(err?.message || 'Failed to update status');
     } finally {

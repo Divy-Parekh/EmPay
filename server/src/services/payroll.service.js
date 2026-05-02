@@ -4,6 +4,8 @@ const SalaryModel = require('../models/salary.model');
 const AttendanceModel = require('../models/attendance.model');
 const TimeOffModel = require('../models/timeoff.model');
 const { computeFullSalary, getBusinessDays, round } = require('../utils/salary');
+const { sendPayslipEmail, sendBankWarningEmail } = require('../utils/mailer');
+const { generatePayslipPDF } = require('../utils/pdfGenerator');
 
 const PayrollService = {
   async getDashboard(companyId) {
@@ -67,9 +69,10 @@ const PayrollService = {
         continue;
       }
 
-      // 2. Skip if missing bank details
+      // 2. Skip if missing bank details + send warning
       if (!emp.bank_name || !emp.bank_acc_number) {
         results.skipped_bank++;
+        sendBankWarningEmail(emp.email, `${emp.first_name} ${emp.last_name}`).catch(e => console.error(e));
         continue;
       }
 
@@ -97,7 +100,7 @@ const PayrollService = {
       const totalDeductions = round(pfEmployee + profTax);
       const netWage = round(grossWage - totalDeductions);
 
-      await PayrollModel.createPayslip({
+      const payslip = await PayrollModel.createPayslip({
         payrun_id: payrunId, employee_id: emp.id, period_start: periodStart, period_end: periodEnd,
         total_working_days: totalWorkingDays, attendance_days: attendanceDays,
         paid_leave_days: paidLeaveDays, unpaid_leave_days: unpaidLeaveDays, payable_days: payableDays,
@@ -107,6 +110,12 @@ const PayrollService = {
         total_deductions: totalDeductions, net_wage: netWage, employer_cost: parseFloat(salary.monthly_wage),
         status: 'computed',
       });
+
+      // Send Payslip Email with PDF
+      generatePayslipPDF(payslip, emp, payrun.name)
+        .then(pdfBuffer => sendPayslipEmail(emp.email, `${emp.first_name} ${emp.last_name}`, payrun.name, pdfBuffer))
+        .catch(err => console.error(`Failed to send payslip to ${emp.email}:`, err));
+
       results.computed++;
     }
 

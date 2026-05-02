@@ -23,8 +23,8 @@ export default function SecurityTab({ employee }) {
 
     setSaving(true);
     const payload = isSelf
-      ? { oldPassword, newPassword, confirmPassword }
-      : { userId: employee.user_id, newPassword };
+      ? { old_password: oldPassword, new_password: newPassword, confirm_password: confirmPassword }
+      : { user_id: employee.user_id, new_password: newPassword, confirm_password: confirmPassword };
     const res = await authApi.changePassword(payload);
     setSaving(false);
 

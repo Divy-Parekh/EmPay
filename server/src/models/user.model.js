@@ -12,7 +12,7 @@ const UserModel = {
 
   async findById(id) {
     const result = await query(
-      'SELECT id, login_id, email, role, company_id, is_password_changed, is_active, created_at FROM users WHERE id = $1',
+      'SELECT id, login_id, email, password_hash, role, company_id, is_password_changed, is_active, created_at FROM users WHERE id = $1',
       [id]
     );
     return result.rows[0];

@@ -56,8 +56,8 @@ const EmployeeService = {
     // Create default salary structure
     await SalaryModel.create(employee.id);
 
-    // Create default permissions for employee role
-    await PermissionModel.createForRole(user.id, 'employee');
+    // Create default permissions for the specified role
+    await PermissionModel.createForRole(user.id, role);
 
     // Allocate default leave balances
     const currentYear = new Date().getFullYear();

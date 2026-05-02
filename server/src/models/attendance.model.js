@@ -4,7 +4,7 @@ const AttendanceModel = {
   async checkIn(employeeId) {
     const result = await query(
       `INSERT INTO attendance (employee_id, date, check_in, status)
-       VALUES ($1, CURRENT_DATE, NOW(), 'present')
+       VALUES ($1, (NOW() AT TIME ZONE 'Asia/Kolkata')::date, NOW(), 'present')
        RETURNING *`,
       [employeeId]
     );
@@ -17,7 +17,7 @@ const AttendanceModel = {
        SET check_out = NOW(),
            work_hours = ROUND(EXTRACT(EPOCH FROM (NOW() - check_in)) / 3600.0, 2),
            extra_hours = GREATEST(0, ROUND(EXTRACT(EPOCH FROM (NOW() - check_in)) / 3600.0 - 8, 2))
-       WHERE employee_id = $1 AND date = CURRENT_DATE AND check_out IS NULL
+       WHERE employee_id = $1 AND check_out IS NULL
        RETURNING *`,
       [employeeId]
     );
@@ -25,20 +25,21 @@ const AttendanceModel = {
   },
 
   async findTodayByEmployee(employeeId) {
-    // Returns any open session for today, or the latest session if all closed
+    // Returns sessions for the current day based on IST
     const result = await query(
       `SELECT * FROM attendance 
-       WHERE employee_id = $1 AND date = CURRENT_DATE 
+       WHERE employee_id = $1 AND date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date 
        ORDER BY check_in DESC`,
       [employeeId]
     );
-    return result.rows; // Return all sessions for today
+    return result.rows;
   },
 
   async findActiveSession(employeeId) {
+    // Finds the most recent open session regardless of date
     const result = await query(
       `SELECT * FROM attendance 
-       WHERE employee_id = $1 AND date = CURRENT_DATE AND check_out IS NULL
+       WHERE employee_id = $1 AND check_out IS NULL
        ORDER BY check_in DESC LIMIT 1`,
       [employeeId]
     );
@@ -57,8 +58,8 @@ const AttendanceModel = {
     const result = await query(
       `SELECT * FROM attendance
        WHERE employee_id = $1
-         AND EXTRACT(MONTH FROM date) = $2
-         AND EXTRACT(YEAR FROM date) = $3
+         AND EXTRACT(MONTH FROM (date AT TIME ZONE 'Asia/Kolkata')) = $2
+         AND EXTRACT(YEAR FROM (date AT TIME ZONE 'Asia/Kolkata')) = $3
        ORDER BY date ASC`,
       [employeeId, month, year]
     );
@@ -97,8 +98,8 @@ const AttendanceModel = {
          COALESCE(SUM(work_hours), 0) as total_work_hours
        FROM attendance
        WHERE employee_id = $1
-         AND EXTRACT(MONTH FROM date) = $2
-         AND EXTRACT(YEAR FROM date) = $3`,
+         AND EXTRACT(MONTH FROM (date AT TIME ZONE 'Asia/Kolkata')) = $2
+         AND EXTRACT(YEAR FROM (date AT TIME ZONE 'Asia/Kolkata')) = $3`,
       [employeeId, month, year]
     );
     return result.rows[0];
@@ -116,8 +117,6 @@ const AttendanceModel = {
   },
 
   async getStatusForEmployees(companyId, date) {
-    // Returns attendance status for all employees on a given date
-    // aggregated to show if they have ANY open session
     const result = await query(
       `SELECT e.id as employee_id,
               CASE

@@ -48,4 +48,64 @@ async function sendCredentialsEmail(toEmail, loginId, password, companyName) {
   }
 }
 
-module.exports = { sendCredentialsEmail };
+/**
+ * Send payslip email with PDF attachment.
+ */
+async function sendPayslipEmail(toEmail, employeeName, payrunName, pdfBuffer) {
+  const mailOptions = {
+    from: `"EmPay Payroll" <${env.smtp.user}>`,
+    to: toEmail,
+    subject: `Payslip for ${payrunName} - ${employeeName}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 500px; padding: 20px; background: #F8FAFC; border-radius: 12px; border: 1px solid #E2E8F0;">
+        <h2 style="color: #7C3AED;">Hello ${employeeName},</h2>
+        <p>Your payslip for <strong>${payrunName}</strong> has been generated.</p>
+        <p>Please find the attached PDF for more details.</p>
+        <p style="font-size: 12px; color: #64748B; margin-top: 20px;">EmPay HRMS Platform</p>
+      </div>
+    `,
+    attachments: [
+      {
+        filename: `Payslip_${payrunName.replace(/\s/g, '_')}.pdf`,
+        content: pdfBuffer,
+      },
+    ],
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (err) {
+    console.error(`❌ Failed to send payslip email to ${toEmail}:`, err.message);
+    return false;
+  }
+}
+
+/**
+ * Send warning for missing bank details.
+ */
+async function sendBankWarningEmail(toEmail, employeeName) {
+  const mailOptions = {
+    from: `"EmPay Payroll" <${env.smtp.user}>`,
+    to: toEmail,
+    subject: `ACTION REQUIRED: Missing Bank Details for Payroll`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 500px; padding: 20px; background: #FFF7ED; border-radius: 12px; border: 1px solid #FED7AA;">
+        <h2 style="color: #EA580C;">Hello ${employeeName},</h2>
+        <p>We were unable to process your payroll for this month because your <strong>bank details are missing</strong> in the system.</p>
+        <p>Please log in to your EmPay portal and update your Bank Name and Account Number immediately to ensure your salary is processed.</p>
+        <p style="font-size: 12px; color: #9A3412; margin-top: 20px;">EmPay Payroll Team</p>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (err) {
+    console.error(`❌ Failed to send bank warning to ${toEmail}:`, err.message);
+    return false;
+  }
+}
+
+module.exports = { sendCredentialsEmail, sendPayslipEmail, sendBankWarningEmail };
