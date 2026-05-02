@@ -160,7 +160,8 @@ async function seed() {
         location: emp.location,
         role: emp.role,
         manager_id: assignedManagerId,
-        date_of_joining: '2025-06-15'
+        date_of_joining: '2025-06-15',
+        password: 'Password@123'
       });
       
       console.log(`👤 ${emp.first_name} (${emp.role}): ${result.loginId} / ${result.generatedPassword}`);

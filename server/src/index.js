@@ -7,8 +7,18 @@ const env = require('./config/env');
 const app = express();
 
 // ─── Middleware ──────────────────────────────────────────
+const allowedOrigins = [env.clientUrl, 'http://localhost:5173', 'http://127.0.0.1:5173'];
+
 app.use(cors({
-  origin: env.clientUrl,
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('ngrok-free.app')) {
+      return callback(null, true);
+    }
+    // For development, allow any origin if it's a hackathon!
+    callback(null, true); 
+  },
   credentials: true,
 }));
 app.use(morgan('dev'));

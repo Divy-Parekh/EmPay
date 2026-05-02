@@ -131,16 +131,30 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Signup link */}
-          <p className="text-center text-sm text-[var(--text-secondary)] mt-6">
-            Don't have an account?{' '}
-            <Link
-              to="/signup"
-              className="text-[var(--text-accent)] hover:text-white transition-colors font-medium"
-            >
-              Sign Up
-            </Link>
-          </p>
+          {/* Quick Logins */}
+          <div className="mt-8 pt-6 border-t border-[var(--border-color)]">
+            <p className="text-[10px] uppercase tracking-widest text-[var(--text-secondary)] text-center mb-4">Quick Login for Testing</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { role: 'Admin', email: 'admin@odoo.com' },
+                { role: 'HR', email: 'ananya.design@odoo.com' },
+                { role: 'Payroll', email: 'rohan.payroll@odoo.com' },
+                { role: 'Employee', email: 'priya.dev@odoo.com' }
+              ].map(q => (
+                <button
+                  key={q.role}
+                  onClick={() => {
+                    setLoginId(q.email);
+                    setPassword('Password@123');
+                  }}
+                  className="px-3 py-2 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[var(--border-color)] text-[11px] text-[var(--text-secondary)] hover:bg-[rgba(124,58,237,0.1)] hover:border-[var(--color-primary)] hover:text-white transition-all text-left"
+                >
+                  <p className="font-bold text-[var(--text-accent)]">{q.role}</p>
+                  <p className="opacity-60 truncate">{q.email}</p>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

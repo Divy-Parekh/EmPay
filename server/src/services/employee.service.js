@@ -25,7 +25,7 @@ const EmployeeService = {
     return { ...employee, skills, certifications };
   },
 
-  async create(company_id, { first_name, last_name, email, phone, job_position, department, manager_id, location, date_of_joining, role = 'employee' }) {
+  async create(company_id, { first_name, last_name, email, phone, job_position, department, manager_id, location, date_of_joining, role = 'employee', password }) {
     // Check duplicate email
     const existing = await UserModel.findByEmail(email);
     if (existing) throw Object.assign(new Error('Email already registered'), { status: 409, code: 'CONFLICT' });
@@ -35,7 +35,7 @@ const EmployeeService = {
 
     // Generate login ID and password
     const loginId = await generateLoginId(prefix, first_name, last_name, company_id);
-    const plainPassword = generatePassword();
+    const plainPassword = password || generatePassword();
     const passwordHash = await hashPassword(plainPassword);
 
     // Create user

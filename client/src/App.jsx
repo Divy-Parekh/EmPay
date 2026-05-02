@@ -66,7 +66,7 @@ export default function App() {
         <Route 
           path="employees/:id" 
           element={
-            <RoleRoute allowedRoles={['admin', 'hr_officer', 'payroll_officer']}>
+            <RoleRoute allowedRoles={['admin', 'hr_officer', 'payroll_officer', 'employee']}>
               <EmployeeDetail />
             </RoleRoute>
           } 

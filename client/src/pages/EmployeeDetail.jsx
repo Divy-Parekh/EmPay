@@ -29,8 +29,17 @@ export default function EmployeeDetail() {
   const fetchEmployee = async () => {
     setLoading(true);
     const res = await employeeApi.getById(id);
-    if (res.success) setEmployee(res.data);
-    else toast.error('Failed to load employee');
+    if (res.success) {
+      // Security: If regular employee, check if they are viewing themselves
+      if (user?.role === 'employee' && res.data.user_id !== user.id) {
+        toast.error('You do not have permission to view this profile');
+        navigate('/dashboard/attendance');
+        return;
+      }
+      setEmployee(res.data);
+    } else {
+      toast.error('Failed to load employee');
+    }
     setLoading(false);
   };
 
@@ -49,9 +58,11 @@ export default function EmployeeDetail() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <button onClick={() => navigate('/dashboard/employees')} className="flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors" id="emp-detail-back">
-        <ArrowLeft size={16} /> Back to Employees
-      </button>
+      {canAccess(user?.role, 'employees') && (
+        <button onClick={() => navigate('/dashboard/employees')} className="flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors mb-4" id="emp-detail-back">
+          <ArrowLeft size={16} /> Back to Employees
+        </button>
+      )}
 
       {/* Header Card */}
       <div className="card p-6 lg:p-8">
