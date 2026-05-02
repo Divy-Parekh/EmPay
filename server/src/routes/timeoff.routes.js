@@ -10,7 +10,7 @@ const { createTimeOffRequestSchema, allocateLeaveSchema } = require('../schemas/
 // GET /api/time-off/types
 router.get('/types', authenticate, async (req, res) => {
   try {
-    const types = await TimeOffService.getTypes(req.user.companyId);
+    const types = await TimeOffService.getTypes(req.user.company_id);
     res.json({ success: true, data: types });
   } catch (err) {
     res.status(err.status || 500).json({ success: false, error: { message: err.message } });
@@ -20,7 +20,7 @@ router.get('/types', authenticate, async (req, res) => {
 // GET /api/time-off/balances
 router.get('/balances', authenticate, async (req, res) => {
   try {
-    const balances = await TimeOffService.getBalances(req.user.id, req.user.companyId, req.user.role);
+    const balances = await TimeOffService.getBalances(req.user.id, req.user.company_id, req.user.role);
     res.json({ success: true, data: balances });
   } catch (err) {
     res.status(err.status || 500).json({ success: false, error: { message: err.message } });
@@ -44,7 +44,7 @@ router.post('/requests', authenticate, upload.single('attachment'), validate(cre
 // GET /api/time-off/requests
 router.get('/requests', authenticate, async (req, res) => {
   try {
-    const requests = await TimeOffService.getRequests(req.user.id, req.user.companyId, req.user.role);
+    const requests = await TimeOffService.getRequests(req.user.id, req.user.company_id, req.user.role);
     res.json({ success: true, data: requests });
   } catch (err) {
     res.status(err.status || 500).json({ success: false, error: { message: err.message } });
@@ -74,7 +74,7 @@ router.put('/requests/:id/reject', authenticate, rbac(['admin', 'hr_officer', 'p
 // POST /api/time-off/allocate
 router.post('/allocate', authenticate, rbac(['admin', 'hr_officer'], 'time_off'), validate(allocateLeaveSchema), async (req, res) => {
   try {
-    const result = await TimeOffService.allocateLeave(req.user.companyId, req.validatedBody);
+    const result = await TimeOffService.allocateLeave(req.user.company_id, req.validatedBody);
     res.json({ success: true, data: result });
   } catch (err) {
     res.status(err.status || 500).json({ success: false, error: { message: err.message } });

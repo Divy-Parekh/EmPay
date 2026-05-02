@@ -2,11 +2,17 @@ const { query } = require('../config/db');
 
 const AttendanceModel = {
   async checkIn(employeeId) {
-    // Upsert: create or update today's record
+    // Upsert: create or update today's record. 
+    // If updating, we reset check_out and hours to allow a new session on the same day.
     const result = await query(
       `INSERT INTO attendance (employee_id, date, check_in, status)
        VALUES ($1, CURRENT_DATE, NOW(), 'present')
-       ON CONFLICT (employee_id, date) DO UPDATE SET check_in = NOW(), status = 'present'
+       ON CONFLICT (employee_id, date) DO UPDATE SET 
+         check_in = NOW(), 
+         check_out = NULL,
+         work_hours = 0,
+         extra_hours = 0,
+         status = 'present'
        RETURNING *`,
       [employeeId]
     );

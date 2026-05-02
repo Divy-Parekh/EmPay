@@ -13,38 +13,38 @@ function computeFullSalary(structure) {
   const wage = parseFloat(structure.monthly_wage);
   const basic = wage * (parseFloat(structure.basic_pct) / 100);
   const hra = basic * (parseFloat(structure.hra_pct) / 100);
-  const standardAllowance = parseFloat(structure.standard_allowance);
-  const performanceBonus = basic * (parseFloat(structure.performance_bonus_pct) / 100);
-  const leaveTravel = basic * (parseFloat(structure.leave_travel_pct) / 100);
-  const fixedAllowance = wage - (basic + hra + standardAllowance + performanceBonus + leaveTravel);
+  const standard_allowance = parseFloat(structure.standard_allowance);
+  const performance_bonus = basic * (parseFloat(structure.performance_bonus_pct) / 100);
+  const leave_travel = basic * (parseFloat(structure.leave_travel_pct) / 100);
+  const fixed_allowance = wage - (basic + hra + standard_allowance + performance_bonus + leave_travel);
 
-  const pfEmployee = basic * (parseFloat(structure.pf_rate) / 100);
-  const pfEmployer = basic * (parseFloat(structure.pf_rate) / 100);
-  const professionalTax = parseFloat(structure.professional_tax);
+  const pf_employee = basic * (parseFloat(structure.pf_rate) / 100);
+  const pf_employer = basic * (parseFloat(structure.pf_rate) / 100);
+  const professional_tax = parseFloat(structure.professional_tax);
 
-  const gross = basic + hra + standardAllowance + performanceBonus + leaveTravel + fixedAllowance;
-  const totalDeductions = pfEmployee + professionalTax;
-  const net = gross - totalDeductions;
+  const gross = basic + hra + standard_allowance + performance_bonus + leave_travel + fixed_allowance;
+  const total_deductions = pf_employee + professional_tax;
+  const net = gross - total_deductions;
 
   return {
     components: {
       basic: round(basic),
       hra: round(hra),
-      standardAllowance: round(standardAllowance),
-      performanceBonus: round(performanceBonus),
-      leaveTravel: round(leaveTravel),
-      fixedAllowance: round(fixedAllowance),
+      standard_allowance: round(standard_allowance),
+      performance_bonus: round(performance_bonus),
+      leave_travel: round(leave_travel),
+      fixed_allowance: round(fixed_allowance),
     },
     deductions: {
-      pfEmployee: round(pfEmployee),
-      pfEmployer: round(pfEmployer),
-      professionalTax: round(professionalTax),
+      pf_employee: round(pf_employee),
+      pf_employer: round(pf_employer),
+      professional_tax: round(professional_tax),
     },
-    grossWage: round(gross),
-    totalDeductions: round(totalDeductions),
-    netWage: round(net),
-    employerCost: round(wage),
-    yearlyWage: round(wage * 12),
+    gross_wage: round(gross),
+    total_deductions: round(total_deductions),
+    net_wage: round(net),
+    employer_cost: round(wage),
+    yearly_wage: round(wage * 12),
   };
 }
 
@@ -63,20 +63,20 @@ function computeProRataSalary(structure, payableDays, totalWorkingDays) {
     components: {
       basic: round(full.components.basic * ratio),
       hra: round(full.components.hra * ratio),
-      standardAllowance: round(full.components.standardAllowance * ratio),
-      performanceBonus: round(full.components.performanceBonus * ratio),
-      leaveTravel: round(full.components.leaveTravel * ratio),
-      fixedAllowance: round(full.components.fixedAllowance * ratio),
+      standard_allowance: round(full.components.standard_allowance * ratio),
+      performance_bonus: round(full.components.performance_bonus * ratio),
+      leave_travel: round(full.components.leave_travel * ratio),
+      fixed_allowance: round(full.components.fixed_allowance * ratio),
     },
     deductions: {
-      pfEmployee: round(full.deductions.pfEmployee * ratio),
-      pfEmployer: round(full.deductions.pfEmployer * ratio),
-      professionalTax: round(full.deductions.professionalTax), // Professional tax is flat
+      pf_employee: round(full.deductions.pf_employee * ratio),
+      pf_employer: round(full.deductions.pf_employer * ratio),
+      professional_tax: round(full.deductions.professional_tax), // Professional tax is flat
     },
-    grossWage: round(Object.values(full.components).reduce((a, b) => a + b, 0) * ratio),
-    totalDeductions: round((full.deductions.pfEmployee * ratio) + full.deductions.professionalTax),
-    netWage: 0, // calculated below
-    employerCost: round(full.employerCost),
+    gross_wage: round(Object.values(full.components).reduce((a, b) => a + b, 0) * ratio),
+    total_deductions: round((full.deductions.pf_employee * ratio) + full.deductions.professional_tax),
+    net_wage: 0, // calculated below
+    employer_cost: round(full.employer_cost),
   };
 }
 

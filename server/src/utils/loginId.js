@@ -18,7 +18,10 @@ async function generateLoginId(companyPrefix, firstName, lastName, companyId, jo
   const lnInit = lastName.substring(0, 2).toUpperCase();
   const year = joiningYear || new Date().getFullYear();
 
-  // Count existing users for this company in this year to determine serial
+  // We want to ensure uniqueness globally. 
+  // We'll start with a serial and increment until we find a free one.
+  
+  // First, get the count for this company to have a starting point
   const result = await query(
     `SELECT COUNT(*) as count FROM users 
      WHERE company_id = $1 
@@ -26,9 +29,23 @@ async function generateLoginId(companyPrefix, firstName, lastName, companyId, jo
     [companyId, year]
   );
 
-  const serial = (parseInt(result.rows[0].count) + 1).toString().padStart(4, '0');
+  let serialNum = parseInt(result.rows[0].count) + 1;
+  let loginId;
+  let isUnique = false;
 
-  return `${prefix}${fnInit}${lnInit}${year}${serial}`;
+  while (!isUnique) {
+    const serial = serialNum.toString().padStart(4, '0');
+    loginId = `${prefix}${fnInit}${lnInit}${year}${serial}`;
+    
+    const existing = await query('SELECT id FROM users WHERE login_id = $1', [loginId]);
+    if (existing.rows.length === 0) {
+      isUnique = true;
+    } else {
+      serialNum++;
+    }
+  }
+
+  return loginId;
 }
 
 module.exports = { generateLoginId };

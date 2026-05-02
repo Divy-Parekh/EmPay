@@ -20,12 +20,12 @@ export default function TimeOff() {
   const [showAllocModal, setShowAllocModal] = useState(false);
 
   /* New request form */
-  const [reqForm, setReqForm] = useState({ timeOffTypeId: '', startDate: '', endDate: '', allocationDays: 1, note: '' });
+  const [reqForm, setReqForm] = useState({ time_off_type_id: '', start_date: '', end_date: '', allocation_days: 1, note: '' });
   const [attachment, setAttachment] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   /* Allocation form */
-  const [allocForm, setAllocForm] = useState({ employeeId: '', timeOffTypeId: '', days: 0 });
+  const [allocForm, setAllocForm] = useState({ employee_id: '', time_off_type_id: '', days: 0 });
 
   useEffect(() => { fetchData(); }, []);
 
@@ -42,7 +42,7 @@ export default function TimeOff() {
 
   const handleCreateRequest = async (e) => {
     e.preventDefault();
-    if (!reqForm.timeOffTypeId || !reqForm.startDate || !reqForm.endDate) {
+    if (!reqForm.time_off_type_id || !reqForm.start_date || !reqForm.end_date) {
       toast.error('Fill all required fields'); return;
     }
     setSubmitting(true);
@@ -58,7 +58,7 @@ export default function TimeOff() {
     setSubmitting(false);
     if (res.success) {
       toast.success('Time off request submitted'); setShowNewModal(false);
-      setReqForm({ timeOffTypeId: '', startDate: '', endDate: '', allocationDays: 1, note: '' });
+      setReqForm({ time_off_type_id: '', start_date: '', end_date: '', allocation_days: 1, note: '' });
       setAttachment(null); fetchData();
     } else toast.error(res.error?.message || 'Failed to submit');
   };
@@ -105,9 +105,9 @@ export default function TimeOff() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {balances.map((b, i) => (
           <div key={i} className="card p-4">
-            <p className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">{b.typeName || b.name}</p>
+            <p className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">{b.type_name || b.name}</p>
             <p className="text-2xl font-bold mt-1" style={{ color: b.remaining > 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>{b.remaining ?? 0}</p>
-            <p className="text-xs text-[var(--text-secondary)] mt-1">of {b.totalAllocated ?? 0} days</p>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">of {b.total_allocated ?? 0} days</p>
           </div>
         ))}
       </div>
@@ -130,9 +130,9 @@ export default function TimeOff() {
                 <tr><td colSpan={7} className="text-center py-8 text-[var(--text-secondary)]">No time off requests</td></tr>
               ) : requests.map(r => (
                 <tr key={r.id}>
-                  {isApprover && <td className="font-medium">{r.employeeName}</td>}
-                  <td>{formatDate(r.startDate)}</td><td>{formatDate(r.endDate)}</td>
-                  <td>{r.typeName || r.timeOffType}</td><td>{r.allocationDays}</td>
+                  {isApprover && <td className="font-medium">{r.employee_name}</td>}
+                  <td>{formatDate(r.start_date)}</td><td>{formatDate(r.end_date)}</td>
+                  <td>{r.type_name || r.time_off_type}</td><td>{r.allocation_days}</td>
                   <td><StatusBadge status={r.status} /></td>
                   {isApprover && (
                     <td>
@@ -154,18 +154,18 @@ export default function TimeOff() {
       {/* New Time Off Modal */}
       <Modal isOpen={showNewModal} onClose={() => setShowNewModal(false)} title="New Time Off Request">
         <form onSubmit={handleCreateRequest} className="space-y-4">
-          <div><label className="label">Employee</label><input value={`${employee?.firstName || ''} ${employee?.lastName || ''}`} disabled className="input-field opacity-60" /></div>
+          <div><label className="label">Employee</label><input value={`${employee?.first_name || ''} ${employee?.last_name || ''}`} disabled className="input-field opacity-60" /></div>
           <div><label className="label">Time Off Type *</label>
-            <select value={reqForm.timeOffTypeId} onChange={e => setReqForm({...reqForm, timeOffTypeId: e.target.value})} className="select-field">
+            <select value={reqForm.time_off_type_id} onChange={e => setReqForm({...reqForm, time_off_type_id: e.target.value})} className="select-field">
               <option value="">Select type...</option>
               {types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">Start Date *</label><input type="date" value={reqForm.startDate} onChange={e => setReqForm({...reqForm, startDate: e.target.value})} className="input-field" /></div>
-            <div><label className="label">End Date *</label><input type="date" value={reqForm.endDate} onChange={e => setReqForm({...reqForm, endDate: e.target.value})} className="input-field" /></div>
+            <div><label className="label">Start Date *</label><input type="date" value={reqForm.start_date} onChange={e => setReqForm({...reqForm, start_date: e.target.value})} className="input-field" /></div>
+            <div><label className="label">End Date *</label><input type="date" value={reqForm.end_date} onChange={e => setReqForm({...reqForm, end_date: e.target.value})} className="input-field" /></div>
           </div>
-          <div><label className="label">Days</label><input type="number" min="0.5" step="0.5" value={reqForm.allocationDays} onChange={e => setReqForm({...reqForm, allocationDays: Number(e.target.value)})} className="input-field" /></div>
+          <div><label className="label">Days</label><input type="number" min="0.5" step="0.5" value={reqForm.allocation_days} onChange={e => setReqForm({...reqForm, allocation_days: Number(e.target.value)})} className="input-field" /></div>
           <div><label className="label">Note</label><textarea value={reqForm.note} onChange={e => setReqForm({...reqForm, note: e.target.value})} className="input-field resize-none" rows={2} /></div>
           <div>
             <label className="label">Attachment (for sick leave)</label>
@@ -187,9 +187,9 @@ export default function TimeOff() {
       {/* Allocation Modal (Admin/HR) */}
       <Modal isOpen={showAllocModal} onClose={() => setShowAllocModal(false)} title="Allocate Leaves">
         <form onSubmit={handleAllocate} className="space-y-4">
-          <div><label className="label">Employee ID</label><input value={allocForm.employeeId} onChange={e => setAllocForm({...allocForm, employeeId: e.target.value})} className="input-field" placeholder="Employee UUID" /></div>
+          <div><label className="label">Employee ID</label><input value={allocForm.employee_id} onChange={e => setAllocForm({...allocForm, employee_id: e.target.value})} className="input-field" placeholder="Employee UUID" /></div>
           <div><label className="label">Leave Type</label>
-            <select value={allocForm.timeOffTypeId} onChange={e => setAllocForm({...allocForm, timeOffTypeId: e.target.value})} className="select-field">
+            <select value={allocForm.time_off_type_id} onChange={e => setAllocForm({...allocForm, time_off_type_id: e.target.value})} className="select-field">
               <option value="">Select type...</option>
               {types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>

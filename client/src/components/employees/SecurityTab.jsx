@@ -13,8 +13,7 @@ export default function SecurityTab({ employee }) {
   const [showNew, setShowNew] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const isSelf = user?.id === employee?.userId;
-  const isAdmin = user?.role === 'admin';
+  const isSelf = user?.id === employee?.user_id;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,7 +24,7 @@ export default function SecurityTab({ employee }) {
     setSaving(true);
     const payload = isSelf
       ? { oldPassword, newPassword, confirmPassword }
-      : { userId: employee.userId, newPassword };
+      : { userId: employee.user_id, newPassword };
     const res = await authApi.changePassword(payload);
     setSaving(false);
 
@@ -45,7 +44,7 @@ export default function SecurityTab({ employee }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="label">Login ID</label>
-            <input value={employee.loginId || ''} disabled className="input-field opacity-60" />
+            <input value={employee.login_id || ''} disabled className="input-field opacity-60" />
           </div>
           {isSelf && (
             <div>

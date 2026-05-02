@@ -2,11 +2,11 @@ const { query } = require('../config/db');
 
 const PayrollModel = {
   // --- Payruns ---
-  async createPayrun({ companyId, name, periodStart, periodEnd, createdBy }) {
+  async createPayrun({ company_id, name, period_start, period_end, created_by }) {
     const result = await query(
       `INSERT INTO payruns (company_id, name, period_start, period_end, created_by)
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [companyId, name, periodStart, periodEnd, createdBy]
+      [company_id, name, period_start, period_end, created_by]
     );
     return result.rows[0];
   },
@@ -57,18 +57,18 @@ const PayrollModel = {
         fixed_allowance=$15, gross_wage=$16, pf_employee=$17, pf_employer=$18, professional_tax=$19,
         total_deductions=$20, net_wage=$21, employer_cost=$22, status=$23, updated_at=NOW()
       RETURNING *`,
-      [data.payrunId, data.employeeId, data.periodStart, data.periodEnd,
-       data.totalWorkingDays, data.attendanceDays, data.paidLeaveDays, data.unpaidLeaveDays, data.payableDays,
-       data.basicAmount, data.hraAmount, data.standardAllowance, data.performanceBonus, data.leaveTravel,
-       data.fixedAllowance, data.grossWage, data.pfEmployee, data.pfEmployer, data.professionalTax,
-       data.totalDeductions, data.netWage, data.employerCost, data.status || 'computed']
+      [data.payrun_id, data.employee_id, data.period_start, data.period_end,
+       data.total_working_days, data.attendance_days, data.paid_leave_days, data.unpaid_leave_days, data.payable_days,
+       data.basic_amount, data.hra_amount, data.standard_allowance, data.performance_bonus, data.leave_travel,
+       data.fixed_allowance, data.gross_wage, data.pf_employee, data.pf_employer, data.professional_tax,
+       data.total_deductions, data.net_wage, data.employer_cost, data.status || 'computed']
     );
     return result.rows[0];
   },
 
   async findPayslipsByPayrun(payrunId) {
     const result = await query(
-      `SELECT ps.*, e.first_name, e.last_name, e.email
+      `SELECT ps.*, (e.first_name || ' ' || e.last_name) as employee_name, e.email
        FROM payslips ps
        JOIN employees e ON e.id = ps.employee_id
        WHERE ps.payrun_id = $1
@@ -80,7 +80,7 @@ const PayrollModel = {
 
   async findPayslipById(id) {
     const result = await query(
-      `SELECT ps.*, e.first_name, e.last_name, e.email, e.department, e.location,
+      `SELECT ps.*, (e.first_name || ' ' || e.last_name) as employee_name, e.email, e.department, e.location,
               e.date_of_joining, e.pan_number, e.uan_number, e.bank_acc_number, e.emp_code,
               p.name as payrun_name, c.name as company_name, c.logo_url as company_logo
        FROM payslips ps

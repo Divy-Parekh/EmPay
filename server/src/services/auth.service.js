@@ -11,11 +11,11 @@ const AuthService = {
   /**
    * Admin signup — creates company, user, employee, and permissions.
    */
-  async signup({ companyName, name, email, phone, password, logoUrl }) {
-    const prefix = companyName.substring(0, 2).toUpperCase();
+  async signup({ company_name, name, email, phone, password, logo_url }) {
+    const prefix = company_name.substring(0, 2).toUpperCase();
 
     // Create company first (without created_by since user doesn't exist yet)
-    const company = await CompanyModel.create({ name: companyName, logoUrl, prefix, createdBy: null });
+    const company = await CompanyModel.create({ name: company_name, logo_url, prefix, created_by: null });
 
     // Split name into first and last
     const nameParts = name.trim().split(/\s+/);
@@ -28,15 +28,15 @@ const AuthService = {
     // Hash password and create user
     const passwordHash = await hashPassword(password);
     const user = await UserModel.create({
-      loginId, email, passwordHash, role: 'admin', companyId: company.id,
+      login_id: loginId, email, password_hash: passwordHash, role: 'admin', company_id: company.id,
     });
 
-    // Update company with created_by
-    await CompanyModel.update(company.id, { name: companyName });
+    // Update company with created_by (though CompanyModel.update doesn't support createdBy yet, we pass it anyway for future)
+    await CompanyModel.update(company.id, { name: company_name, logo_url, created_by: user.id });
 
     // Create employee profile
     const employee = await EmployeeModel.create({
-      userId: user.id, companyId: company.id, firstName, lastName, email, phone,
+      user_id: user.id, company_id: company.id, first_name: firstName, last_name: lastName, email, phone,
     });
 
     // Create salary structure (default)
@@ -52,9 +52,9 @@ const AuthService = {
     const permissions = await PermissionModel.findByUser(user.id);
 
     return {
-      user: { id: user.id, loginId: user.login_id, email: user.email, role: user.role, isPasswordChanged: true },
-      employee: { id: employee.id, firstName, lastName, profilePicture: null },
-      company: { id: company.id, name: companyName, logoUrl, prefix },
+      user: { id: user.id, login_id: user.login_id, email: user.email, role: user.role, is_password_changed: true },
+      employee: { id: employee.id, first_name: employee.first_name, last_name: employee.last_name, profile_picture: null },
+      company: { id: company.id, name: company.name, logo_url: company.logo_url, prefix: company.prefix },
       permissions,
       token,
     };
@@ -63,10 +63,10 @@ const AuthService = {
   /**
    * Login — validates credentials, returns user data + token.
    */
-  async login({ loginId, email, password }) {
+  async login({ login_id, email, password }) {
     let user;
-    if (loginId) {
-      user = await UserModel.findByLoginId(loginId);
+    if (login_id) {
+      user = await UserModel.findByLoginId(login_id);
     } else if (email) {
       user = await UserModel.findByEmail(email);
     }
@@ -88,21 +88,21 @@ const AuthService = {
     return {
       user: {
         id: user.id,
-        loginId: user.login_id,
+        login_id: user.login_id,
         email: user.email,
         role: user.role,
-        isPasswordChanged: user.is_password_changed,
+        is_password_changed: user.is_password_changed,
       },
       employee: employee ? {
         id: employee.id,
-        firstName: employee.first_name,
-        lastName: employee.last_name,
-        profilePicture: employee.profile_picture,
+        first_name: employee.first_name,
+        last_name: employee.last_name,
+        profile_picture: employee.profile_picture,
       } : null,
       company: company ? {
         id: company.id,
         name: company.name,
-        logoUrl: company.logo_url,
+        logo_url: company.logo_url,
         prefix: company.prefix,
       } : null,
       permissions: permissions || {},
@@ -113,28 +113,26 @@ const AuthService = {
   /**
    * Change password — for self or admin changing another user.
    */
-  async changePassword(currentUserId, currentRole, { oldPassword, newPassword, userId }) {
+  async changePassword(currentUserId, currentRole, { old_password, new_password, user_id }) {
     let targetUserId = currentUserId;
 
     // Admin can change other users' passwords without old password
-    if (userId && currentRole === 'admin') {
-      targetUserId = userId;
+    if (user_id && currentRole === 'admin') {
+      targetUserId = user_id;
     } else {
       // Regular user must provide old password
-      const user = await UserModel.findByLoginId(
-        (await UserModel.findById(currentUserId)).login_id
-      );
+      const user = await UserModel.findById(currentUserId);
       if (!user) throw Object.assign(new Error('User not found'), { status: 404 });
 
-      if (oldPassword) {
-        const isMatch = await comparePassword(oldPassword, user.password_hash);
+      if (old_password) {
+        const isMatch = await comparePassword(old_password, user.password_hash);
         if (!isMatch) {
           throw Object.assign(new Error('Old password is incorrect'), { status: 400, code: 'VALIDATION_ERROR' });
         }
       }
     }
 
-    const passwordHash = await hashPassword(newPassword);
+    const passwordHash = await hashPassword(new_password);
     await UserModel.updatePassword(targetUserId, passwordHash);
 
     return { message: 'Password changed successfully' };

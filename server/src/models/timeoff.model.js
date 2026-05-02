@@ -10,10 +10,10 @@ const TimeOffModel = {
     return result.rows;
   },
 
-  async createType({ companyId, name, isPaid, defaultDays }) {
+  async createType({ company_id, name, is_paid, default_days }) {
     const result = await query(
       'INSERT INTO time_off_types (company_id, name, is_paid, default_days) VALUES ($1, $2, $3, $4) RETURNING *',
-      [companyId, name, isPaid, defaultDays]
+      [company_id, name, is_paid, default_days]
     );
     return result.rows[0];
   },
@@ -21,7 +21,7 @@ const TimeOffModel = {
   // --- Balances ---
   async getBalances(employeeId, year) {
     const result = await query(
-      `SELECT b.*, t.name as type_name, t.is_paid
+      `SELECT b.*, t.name as type_name, t.is_paid, (b.total_allocated - b.used) as remaining
        FROM time_off_balances b
        JOIN time_off_types t ON t.id = b.time_off_type_id
        WHERE b.employee_id = $1 AND b.year = $2`,
@@ -30,14 +30,14 @@ const TimeOffModel = {
     return result.rows;
   },
 
-  async upsertBalance({ employeeId, timeOffTypeId, totalAllocated, year }) {
+  async upsertBalance({ employee_id, time_off_type_id, total_allocated, year }) {
     const result = await query(
       `INSERT INTO time_off_balances (employee_id, time_off_type_id, total_allocated, year)
        VALUES ($1, $2, $3, $4)
        ON CONFLICT (employee_id, time_off_type_id, year)
        DO UPDATE SET total_allocated = $3
        RETURNING *`,
-      [employeeId, timeOffTypeId, totalAllocated, year]
+      [employee_id, time_off_type_id, total_allocated, year]
     );
     return result.rows[0];
   },
@@ -63,11 +63,11 @@ const TimeOffModel = {
   },
 
   // --- Requests ---
-  async createRequest({ employeeId, timeOffTypeId, startDate, endDate, allocationDays, attachmentUrl, note }) {
+  async createRequest({ employee_id, time_off_type_id, start_date, end_date, allocation_days, attachment_url, note }) {
     const result = await query(
       `INSERT INTO time_off_requests (employee_id, time_off_type_id, start_date, end_date, allocation_days, attachment_url, note)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [employeeId, timeOffTypeId, startDate, endDate, allocationDays, attachmentUrl, note]
+      [employee_id, time_off_type_id, start_date, end_date, allocation_days, attachment_url, note]
     );
     return result.rows[0];
   },
@@ -87,7 +87,7 @@ const TimeOffModel = {
   async findRequestsByCompany(companyId, status) {
     let sql = `
       SELECT r.*, t.name as type_name, t.is_paid,
-             e.first_name, e.last_name
+             (e.first_name || ' ' || e.last_name) as employee_name
       FROM time_off_requests r
       JOIN time_off_types t ON t.id = r.time_off_type_id
       JOIN employees e ON e.id = r.employee_id
@@ -108,7 +108,7 @@ const TimeOffModel = {
   async findRequestById(id) {
     const result = await query(
       `SELECT r.*, t.name as type_name, t.is_paid,
-              e.first_name, e.last_name, e.company_id
+              (e.first_name || ' ' || e.last_name) as employee_name, e.company_id
        FROM time_off_requests r
        JOIN time_off_types t ON t.id = r.time_off_type_id
        JOIN employees e ON e.id = r.employee_id

@@ -9,10 +9,10 @@ const SkillModel = {
     return result.rows;
   },
 
-  async create({ employeeId, name, level }) {
+  async create({ employee_id, name, level }) {
     const result = await query(
       'INSERT INTO employee_skills (employee_id, name, level) VALUES ($1, $2, $3) RETURNING *',
-      [employeeId, name, level]
+      [employee_id, name, level]
     );
     return result.rows[0];
   },
@@ -35,10 +35,10 @@ const CertificationModel = {
     return result.rows;
   },
 
-  async create({ employeeId, name, issuer, dateObtained }) {
+  async create({ employee_id, name, issuer, date_obtained }) {
     const result = await query(
       'INSERT INTO employee_certifications (employee_id, name, issuer, date_obtained) VALUES ($1, $2, $3, $4) RETURNING *',
-      [employeeId, name, issuer, dateObtained]
+      [employee_id, name, issuer, date_obtained]
     );
     return result.rows[0];
   },

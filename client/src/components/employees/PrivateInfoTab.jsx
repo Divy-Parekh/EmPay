@@ -6,18 +6,18 @@ import toast from 'react-hot-toast';
 
 export default function PrivateInfoTab({ employee, canEdit, onUpdate }) {
   const [form, setForm] = useState({
-    dateOfBirth: employee.dateOfBirth?.split('T')[0] || '',
+    date_of_birth: employee.date_of_birth?.split('T')[0] || '',
     address: employee.address || '',
     nationality: employee.nationality || '',
     gender: employee.gender || '',
-    maritalStatus: employee.maritalStatus || '',
-    dateOfJoining: employee.dateOfJoining?.split('T')[0] || '',
-    bankAccNumber: employee.bankAccNumber || '',
-    bankName: employee.bankName || '',
-    ifscCode: employee.ifscCode || '',
-    panNumber: employee.panNumber || '',
-    uanNumber: employee.uanNumber || '',
-    empCode: employee.empCode || '',
+    marital_status: employee.marital_status || '',
+    date_of_joining: employee.date_of_joining?.split('T')[0] || '',
+    bank_acc_number: employee.bank_acc_number || '',
+    bank_name: employee.bank_name || '',
+    ifsc_code: employee.ifsc_code || '',
+    pan_number: employee.pan_number || '',
+    uan_number: employee.uan_number || '',
+    emp_code: employee.emp_code || '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -50,23 +50,23 @@ export default function PrivateInfoTab({ employee, canEdit, onUpdate }) {
       {/* Personal Info */}
       <div className="card p-5 space-y-4">
         <h3 className="text-sm font-semibold text-[var(--text-accent)] uppercase tracking-wider">Personal Information</h3>
-        <Field label="Date of Birth" name="dateOfBirth" type="date" />
+        <Field label="Date of Birth" name="date_of_birth" type="date" />
         <Field label="Address" name="address" />
         <Field label="Nationality" name="nationality" />
         <Field label="Gender" name="gender" options={['Male', 'Female', 'Other']} />
-        <Field label="Marital Status" name="maritalStatus" options={['Single', 'Married', 'Divorced', 'Widowed']} />
-        <Field label="Date of Joining" name="dateOfJoining" type="date" />
+        <Field label="Marital Status" name="marital_status" options={['Single', 'Married', 'Divorced', 'Widowed']} />
+        <Field label="Date of Joining" name="date_of_joining" type="date" />
       </div>
 
       {/* Bank Details */}
       <div className="card p-5 space-y-4">
         <h3 className="text-sm font-semibold text-[var(--text-accent)] uppercase tracking-wider">Bank & ID Details</h3>
-        <Field label="Account Number" name="bankAccNumber" />
-        <Field label="Bank Name" name="bankName" />
-        <Field label="IFSC Code" name="ifscCode" />
-        <Field label="PAN Number" name="panNumber" />
-        <Field label="UAN Number" name="uanNumber" />
-        <Field label="Employee Code" name="empCode" />
+        <Field label="Account Number" name="bank_acc_number" />
+        <Field label="Bank Name" name="bank_name" />
+        <Field label="IFSC Code" name="ifsc_code" />
+        <Field label="PAN Number" name="pan_number" />
+        <Field label="UAN Number" name="uan_number" />
+        <Field label="Employee Code" name="emp_code" />
       </div>
 
       {canEdit && (

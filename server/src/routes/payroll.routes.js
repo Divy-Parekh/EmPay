@@ -11,7 +11,7 @@ const payrollAccess = rbac(['admin', 'payroll_officer'], 'payroll');
 // GET /api/payroll/dashboard
 router.get('/dashboard', authenticate, payrollAccess, async (req, res) => {
   try {
-    const data = await PayrollService.getDashboard(req.user.companyId);
+    const data = await PayrollService.getDashboard(req.user.company_id);
     res.json({ success: true, data });
   } catch (err) {
     res.status(err.status || 500).json({ success: false, error: { message: err.message } });
@@ -21,7 +21,7 @@ router.get('/dashboard', authenticate, payrollAccess, async (req, res) => {
 // POST /api/payroll/payruns
 router.post('/payruns', authenticate, payrollAccess, validate(createPayrunSchema), async (req, res) => {
   try {
-    const payrun = await PayrollService.createPayrun(req.user.companyId, req.user.id, req.validatedBody);
+    const payrun = await PayrollService.createPayrun(req.user.company_id, req.user.id, req.validatedBody);
     res.status(201).json({ success: true, data: payrun });
   } catch (err) {
     res.status(err.status || 500).json({ success: false, error: { message: err.message } });
@@ -31,7 +31,7 @@ router.post('/payruns', authenticate, payrollAccess, validate(createPayrunSchema
 // GET /api/payroll/payruns
 router.get('/payruns', authenticate, payrollAccess, async (req, res) => {
   try {
-    const payruns = await PayrollService.listPayruns(req.user.companyId);
+    const payruns = await PayrollService.listPayruns(req.user.company_id);
     res.json({ success: true, data: payruns });
   } catch (err) {
     res.status(err.status || 500).json({ success: false, error: { message: err.message } });
@@ -92,6 +92,16 @@ router.get('/payslips/:id', authenticate, payrollAccess, async (req, res) => {
 router.put('/payslips/:id/cancel', authenticate, payrollAccess, async (req, res) => {
   try {
     const payslip = await PayrollService.cancelPayslip(req.params.id);
+    res.json({ success: true, data: payslip });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// POST /api/payroll/payslips/:id/new
+router.post('/payslips/:id/new', authenticate, payrollAccess, async (req, res) => {
+  try {
+    const payslip = await PayrollService.recomputePayslip(req.params.id);
     res.json({ success: true, data: payslip });
   } catch (err) {
     res.status(err.status || 500).json({ success: false, error: { message: err.message } });

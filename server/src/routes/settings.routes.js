@@ -8,7 +8,7 @@ const { upload } = require('../middleware/upload');
 // GET /api/settings/users
 router.get('/users', authenticate, rbac(['admin'], 'settings'), async (req, res) => {
   try {
-    const users = await SettingsService.listUsers(req.user.companyId);
+    const users = await SettingsService.listUsers(req.user.company_id);
     res.json({ success: true, data: users });
   } catch (err) {
     res.status(err.status || 500).json({ success: false, error: { message: err.message } });
@@ -45,7 +45,7 @@ router.put('/users/:id/permissions', authenticate, rbac(['admin'], 'settings'), 
 // GET /api/settings/company
 router.get('/company', authenticate, rbac(['admin'], 'company'), async (req, res) => {
   try {
-    const company = await SettingsService.getCompany(req.user.companyId);
+    const company = await SettingsService.getCompany(req.user.company_id);
     res.json({ success: true, data: company });
   } catch (err) {
     res.status(err.status || 500).json({ success: false, error: { message: err.message } });
@@ -56,7 +56,7 @@ router.get('/company', authenticate, rbac(['admin'], 'company'), async (req, res
 router.put('/company', authenticate, rbac(['admin'], 'company'), upload.single('companyLogo'), async (req, res) => {
   try {
     const logoUrl = req.file ? `/uploads/logos/${req.file.filename}` : undefined;
-    const company = await SettingsService.updateCompany(req.user.companyId, {
+    const company = await SettingsService.updateCompany(req.user.company_id, {
       name: req.body.name,
       logoUrl,
     });

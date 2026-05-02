@@ -26,7 +26,7 @@ export default function Attendance() {
   const fetchAll = async () => {
     setLoading(true);
     const res = await attendanceApi.getAll({ date });
-    if (res.success) setRecords(res.data?.records || []);
+    if (res.success) setRecords(res.data || []);
     setLoading(false);
   };
 
@@ -66,11 +66,11 @@ export default function Attendance() {
                     <tr><td colSpan={6} className="text-center py-8 text-[var(--text-secondary)]">No attendance records for this date</td></tr>
                   ) : records.map((r, i) => (
                     <tr key={i}>
-                      <td className="font-medium">{r.employeeName || `${r.firstName} ${r.lastName}`}</td>
-                      <td>{formatTime(r.checkIn)}</td>
-                      <td>{formatTime(r.checkOut)}</td>
-                      <td>{formatHours(r.workHours)}</td>
-                      <td>{formatHours(r.extraHours)}</td>
+                      <td className="font-medium">{r.employee_name || `${r.first_name} ${r.last_name}`}</td>
+                      <td>{formatTime(r.check_in)}</td>
+                      <td>{formatTime(r.check_out)}</td>
+                      <td>{formatHours(r.work_hours)}</td>
+                      <td>{formatHours(r.extra_hours)}</td>
                       <td><StatusBadge status={r.status} /></td>
                     </tr>
                   ))}
@@ -93,17 +93,17 @@ export default function Attendance() {
             <div className="grid grid-cols-3 gap-4">
               <div className="card p-4 text-center">
                 <CalendarDays size={20} className="mx-auto mb-2 text-[var(--color-success)]" />
-                <p className="text-2xl font-bold text-[var(--color-success)]">{summary.daysPresent}</p>
+                <p className="text-2xl font-bold text-[var(--color-success)]">{summary.days_present}</p>
                 <p className="text-xs text-[var(--text-secondary)] mt-1">Days Present</p>
               </div>
               <div className="card p-4 text-center">
                 <TreePalm size={20} className="mx-auto mb-2 text-[var(--color-info)]" />
-                <p className="text-2xl font-bold text-[var(--color-info)]">{summary.leavesRemaining}</p>
+                <p className="text-2xl font-bold text-[var(--color-info)]">{summary.leaves_remaining}</p>
                 <p className="text-xs text-[var(--text-secondary)] mt-1">Leaves Remaining</p>
               </div>
               <div className="card p-4 text-center">
                 <Clock size={20} className="mx-auto mb-2 text-[var(--text-accent)]" />
-                <p className="text-2xl font-bold">{summary.totalWorkingDays}</p>
+                <p className="text-2xl font-bold">{summary.total_working_days}</p>
                 <p className="text-xs text-[var(--text-secondary)] mt-1">Total Working Days</p>
               </div>
             </div>
@@ -121,10 +121,10 @@ export default function Attendance() {
                   ) : records.map((r, i) => (
                     <tr key={i}>
                       <td className="font-medium">{r.date}</td>
-                      <td>{formatTime(r.checkIn)}</td>
-                      <td>{formatTime(r.checkOut)}</td>
-                      <td>{formatHours(r.workHours)}</td>
-                      <td>{formatHours(r.extraHours)}</td>
+                      <td>{formatTime(r.check_in)}</td>
+                      <td>{formatTime(r.check_out)}</td>
+                      <td>{formatHours(r.work_hours)}</td>
+                      <td>{formatHours(r.extra_hours)}</td>
                       <td><StatusBadge status={r.status} /></td>
                     </tr>
                   ))}

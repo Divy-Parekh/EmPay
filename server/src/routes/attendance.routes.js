@@ -50,7 +50,7 @@ router.get('/my', authenticate, async (req, res) => {
 router.get('/all', authenticate, rbac(['admin', 'hr_officer', 'payroll_officer'], 'attendance'), async (req, res) => {
   try {
     const date = req.query.date || new Date().toISOString().split('T')[0];
-    const records = await AttendanceService.getAllAttendance(req.user.companyId, date);
+    const records = await AttendanceService.getAllAttendance(req.user.company_id, date);
     res.json({ success: true, data: records });
   } catch (err) {
     res.status(err.status || 500).json({ success: false, error: { message: err.message } });
@@ -60,7 +60,7 @@ router.get('/all', authenticate, rbac(['admin', 'hr_officer', 'payroll_officer']
 // GET /api/attendance/statuses  (for employee cards status indicators)
 router.get('/statuses', authenticate, async (req, res) => {
   try {
-    const statuses = await AttendanceService.getEmployeeStatuses(req.user.companyId);
+    const statuses = await AttendanceService.getEmployeeStatuses(req.user.company_id);
     res.json({ success: true, data: statuses });
   } catch (err) {
     res.status(err.status || 500).json({ success: false, error: { message: err.message } });

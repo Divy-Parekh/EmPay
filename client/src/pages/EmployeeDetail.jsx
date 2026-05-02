@@ -21,7 +21,7 @@ export default function EmployeeDetail() {
   const [activeTab, setActiveTab] = useState('Resume');
   const [loading, setLoading] = useState(true);
 
-  const canEdit = canEditEmployee(user?.role) || user?.id === employee?.userId;
+  const canEdit = canEditEmployee(user?.role) || user?.id === employee?.user_id;
   const showSalary = canAccess(user?.role, 'salary_info');
 
   useEffect(() => { fetchEmployee(); }, [id]);
@@ -58,28 +58,28 @@ export default function EmployeeDetail() {
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Avatar */}
           <div className="shrink-0">
-            {employee.profilePicture ? (
-              <img src={employee.profilePicture} alt="" className="w-24 h-24 rounded-2xl object-cover ring-2 ring-[var(--border-color)]" />
+            {employee.profile_picture ? (
+              <img src={employee.profile_picture} alt="" className="w-24 h-24 rounded-2xl object-cover ring-2 ring-[var(--border-color)]" />
             ) : (
               <div className="w-24 h-24 rounded-2xl flex items-center justify-center text-2xl font-bold text-white" style={{ background: 'linear-gradient(135deg, var(--color-primary), #9333EA)' }}>
-                {getInitials(employee.firstName, employee.lastName)}
+                {getInitials(employee.first_name, employee.last_name)}
               </div>
             )}
           </div>
           {/* Info */}
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-[var(--text-primary)]">{employee.firstName} {employee.lastName}</h1>
-              <p className="text-[var(--text-accent)] text-sm mt-1">{employee.jobPosition || 'No position assigned'}</p>
+              <h1 className="text-2xl font-bold text-[var(--text-primary)]">{employee.first_name} {employee.last_name}</h1>
+              <p className="text-[var(--text-accent)] text-sm mt-1">{employee.job_position || 'No position assigned'}</p>
               <div className="flex flex-wrap gap-4 mt-3 text-sm text-[var(--text-secondary)]">
                 {employee.email && <span className="flex items-center gap-1.5"><Mail size={14} />{employee.email}</span>}
                 {employee.phone && <span className="flex items-center gap-1.5"><Phone size={14} />{employee.phone}</span>}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center gap-2 text-[var(--text-secondary)]"><Building2 size={14} className="text-[var(--color-primary)] shrink-0" /><div><p className="text-[10px] uppercase tracking-wider">Company</p><p className="text-[var(--text-primary)]">{employee.companyName || '—'}</p></div></div>
+              <div className="flex items-center gap-2 text-[var(--text-secondary)]"><Building2 size={14} className="text-[var(--color-primary)] shrink-0" /><div><p className="text-[10px] uppercase tracking-wider">Company</p><p className="text-[var(--text-primary)]">{employee.company_name || '—'}</p></div></div>
               <div className="flex items-center gap-2 text-[var(--text-secondary)]"><Briefcase size={14} className="text-[var(--color-primary)] shrink-0" /><div><p className="text-[10px] uppercase tracking-wider">Department</p><p className="text-[var(--text-primary)]">{employee.department || '—'}</p></div></div>
-              <div className="flex items-center gap-2 text-[var(--text-secondary)]"><Users size={14} className="text-[var(--color-primary)] shrink-0" /><div><p className="text-[10px] uppercase tracking-wider">Manager</p><p className="text-[var(--text-primary)]">{employee.managerName || '—'}</p></div></div>
+              <div className="flex items-center gap-2 text-[var(--text-secondary)]"><Users size={14} className="text-[var(--color-primary)] shrink-0" /><div><p className="text-[10px] uppercase tracking-wider">Manager</p><p className="text-[var(--text-primary)]">{employee.manager_name || '—'}</p></div></div>
               <div className="flex items-center gap-2 text-[var(--text-secondary)]"><MapPin size={14} className="text-[var(--color-primary)] shrink-0" /><div><p className="text-[10px] uppercase tracking-wider">Location</p><p className="text-[var(--text-primary)]">{employee.location || '—'}</p></div></div>
             </div>
           </div>

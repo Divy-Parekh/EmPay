@@ -10,7 +10,7 @@ const { createEmployeeSchema, updateEmployeeSchema, updateResumeSchema,
 // GET /api/employees
 router.get('/', authenticate, async (req, res) => {
   try {
-    const employees = await EmployeeService.list(req.user.companyId, req.query.search);
+    const employees = await EmployeeService.list(req.user.company_id, req.query.search);
     res.json({ success: true, data: employees });
   } catch (err) {
     res.status(err.status || 500).json({ success: false, error: { message: err.message } });
@@ -30,7 +30,7 @@ router.get('/:id', authenticate, async (req, res) => {
 // POST /api/employees
 router.post('/', authenticate, rbac(['admin', 'hr_officer'], 'employees'), validate(createEmployeeSchema), async (req, res) => {
   try {
-    const result = await EmployeeService.create(req.user.companyId, req.validatedBody);
+    const result = await EmployeeService.create(req.user.company_id, req.validatedBody);
     res.status(201).json({ success: true, data: result });
   } catch (err) {
     res.status(err.status || 500).json({ success: false, error: { code: err.code, message: err.message } });

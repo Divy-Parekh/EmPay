@@ -40,10 +40,10 @@ const AttendanceService = {
     return {
       records,
       summary: {
-        daysPresent: parseInt(summary.days_present) || 0,
-        leavesRemaining: totalLeaveRemaining,
-        totalWorkingDays: parseInt(employee.working_days) || 22,
-        totalWorkHours: parseFloat(summary.total_work_hours) || 0,
+        days_present: parseInt(summary.days_present) || 0,
+        leaves_remaining: totalLeaveRemaining,
+        total_working_days: parseInt(employee.working_days) || 22,
+        total_work_hours: parseFloat(summary.total_work_hours) || 0,
       },
     };
   },
@@ -54,14 +54,14 @@ const AttendanceService = {
 
   async getStatus(userId) {
     const employee = await EmployeeModel.findByUserId(userId);
-    if (!employee) return { isCheckedIn: false };
+    if (!employee) return { is_checked_in: false };
 
     const today = await AttendanceModel.findTodayByEmployee(employee.id);
     return {
-      isCheckedIn: today ? (today.check_in && !today.check_out) : false,
-      checkIn: today?.check_in || null,
-      checkOut: today?.check_out || null,
-      workHours: today?.work_hours || 0,
+      is_checked_in: today ? (today.check_in && !today.check_out) : false,
+      check_in: today?.check_in || null,
+      check_out: today?.check_out || null,
+      work_hours: today?.work_hours || 0,
     };
   },
 

@@ -377,6 +377,32 @@ body {
     border: 1px solid #e5e7eb !important;
     box-shadow: none !important;
   }
+
+  .printable-area {
+    background: white !important;
+    color: black !important;
+  }
+
+  .printable-area * {
+    color: black !important;
+    background-color: transparent !important;
+    border-color: #ddd !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  .printable-area th {
+    background: #f8fafc !important;
+    font-weight: bold !important;
+    text-transform: uppercase !important;
+    color: black !important;
+  }
+
+  .printable-area .badge {
+    border: 1px solid #ddd !important;
+    background: transparent !important;
+    color: black !important;
+  }
 }
 
 .print-only {

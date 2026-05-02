@@ -14,24 +14,30 @@ const TimeOffService = {
     return TimeOffModel.getBalances(employee.id, year);
   },
 
-  async createRequest(userId, { timeOffTypeId, startDate, endDate, allocationDays, attachmentUrl, note }) {
+  async createRequest(userId, { time_off_type_id, start_date, end_date, allocation_days, attachment_url, note }) {
     const employee = await EmployeeModel.findByUserId(userId);
     if (!employee) throw Object.assign(new Error('Employee not found'), { status: 404 });
 
     // Validate balance
-    const year = new Date(startDate).getFullYear();
+    const year = new Date(start_date).getFullYear();
     const balances = await TimeOffModel.getBalances(employee.id, year);
-    const typeBalance = balances.find(b => b.time_off_type_id === timeOffTypeId);
+    const typeBalance = balances.find(b => b.time_off_type_id === time_off_type_id);
 
     if (typeBalance) {
       const remaining = parseFloat(typeBalance.total_allocated) - parseFloat(typeBalance.used);
-      if (allocationDays > remaining) {
+      if (allocation_days > remaining) {
         throw Object.assign(new Error(`Insufficient leave balance. Available: ${remaining} days`), { status: 400, code: 'VALIDATION_ERROR' });
       }
     }
 
     return TimeOffModel.createRequest({
-      employeeId: employee.id, timeOffTypeId, startDate, endDate, allocationDays, attachmentUrl, note,
+      employee_id: employee.id,
+      time_off_type_id: time_off_type_id,
+      start_date: start_date,
+      end_date: end_date,
+      allocation_days: allocation_days,
+      attachment_url: attachment_url,
+      note,
     });
   },
 
@@ -66,21 +72,24 @@ const TimeOffService = {
     return TimeOffModel.updateRequestStatus(requestId, 'rejected', rejectedById);
   },
 
-  async allocateLeave(companyId, { employeeId, timeOffTypeId, days, year }) {
+  async allocateLeave(companyId, { employee_id, time_off_type_id, days, year }) {
     const currentYear = year || new Date().getFullYear();
     return TimeOffModel.upsertBalance({
-      employeeId, timeOffTypeId, totalAllocated: days, year: currentYear,
+      employee_id,
+      time_off_type_id,
+      total_allocated: days,
+      year: currentYear,
     });
   },
 
   async initializeDefaultTypes(companyId) {
     const defaults = [
-      { name: 'Paid Time Off', isPaid: true, defaultDays: 24 },
-      { name: 'Sick Leave', isPaid: true, defaultDays: 7 },
-      { name: 'Unpaid Leave', isPaid: false, defaultDays: 0 },
+      { name: 'Paid Time Off', is_paid: true, default_days: 24 },
+      { name: 'Sick Leave', is_paid: true, default_days: 7 },
+      { name: 'Unpaid Leave', is_paid: false, default_days: 0 },
     ];
     for (const d of defaults) {
-      await TimeOffModel.createType({ companyId, ...d });
+      await TimeOffModel.createType({ company_id: companyId, ...d });
     }
   },
 };

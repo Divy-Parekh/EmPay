@@ -6,4 +6,6 @@ export const attendanceApi = {
   getMy: (params) => api.get(`/attendance/my?${new URLSearchParams(params)}`),
   getAll: (params) => api.get(`/attendance/all?${new URLSearchParams(params)}`),
   getSummary: (params) => api.get(`/attendance/summary?${new URLSearchParams(params)}`),
+  getStatus: () => api.get('/attendance/status'),
+  getStatuses: () => api.get('/attendance/statuses'),
 };

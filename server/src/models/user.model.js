@@ -1,11 +1,11 @@
 const { query } = require('../config/db');
 
 const UserModel = {
-  async create({ loginId, email, passwordHash, role, companyId }) {
+  async create({ login_id, email, password_hash, role, company_id }) {
     const result = await query(
       `INSERT INTO users (login_id, email, password_hash, role, company_id)
        VALUES ($1, $2, $3, $4, $5) RETURNING id, login_id, email, role, company_id, is_password_changed, created_at`,
-      [loginId, email, passwordHash, role, companyId]
+      [login_id, email, password_hash, role, company_id]
     );
     return result.rows[0];
   },

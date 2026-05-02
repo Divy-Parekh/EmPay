@@ -18,7 +18,7 @@ export default function Employees() {
   const [showNewModal, setShowNewModal] = useState(false);
 
   /* New employee form */
-  const [newEmp, setNewEmp] = useState({ firstName: '', lastName: '', email: '' });
+  const [newEmp, setNewEmp] = useState({ first_name: '', last_name: '', email: '' });
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -35,17 +35,17 @@ export default function Employees() {
   const filteredEmployees = employees.filter((emp) => {
     const q = search.toLowerCase();
     return (
-      emp.firstName?.toLowerCase().includes(q) ||
-      emp.lastName?.toLowerCase().includes(q) ||
+      emp.first_name?.toLowerCase().includes(q) ||
+      emp.last_name?.toLowerCase().includes(q) ||
       emp.email?.toLowerCase().includes(q) ||
-      emp.jobPosition?.toLowerCase().includes(q) ||
+      emp.job_position?.toLowerCase().includes(q) ||
       emp.department?.toLowerCase().includes(q)
     );
   });
 
   const handleCreateEmployee = async (e) => {
     e.preventDefault();
-    if (!newEmp.firstName || !newEmp.lastName || !newEmp.email) {
+    if (!newEmp.first_name || !newEmp.last_name || !newEmp.email) {
       toast.error('All fields are required');
       return;
     }
@@ -56,7 +56,7 @@ export default function Employees() {
     if (res.success) {
       toast.success(res.data?.message || 'Employee created! Credentials sent via email.');
       setShowNewModal(false);
-      setNewEmp({ firstName: '', lastName: '', email: '' });
+      setNewEmp({ first_name: '', last_name: '', email: '' });
       fetchEmployees();
     } else {
       toast.error(res.error?.message || 'Failed to create employee');
@@ -150,10 +150,10 @@ export default function Employees() {
             >
               <div className="flex items-center gap-4">
                 {/* Avatar */}
-                {emp.profilePicture ? (
+                {emp.profile_picture ? (
                   <img
-                    src={emp.profilePicture}
-                    alt={`${emp.firstName} ${emp.lastName}`}
+                    src={emp.profile_picture}
+                    alt={`${emp.first_name} ${emp.last_name}`}
                     className="w-14 h-14 rounded-full object-cover ring-2 ring-[var(--border-color)]"
                   />
                 ) : (
@@ -167,17 +167,17 @@ export default function Employees() {
                       })`,
                     }}
                   >
-                    {getInitials(emp.firstName, emp.lastName)}
+                    {getInitials(emp.first_name, emp.last_name)}
                   </div>
                 )}
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-semibold text-[var(--text-primary)] truncate">
-                    {emp.firstName} {emp.lastName}
+                    {emp.first_name} {emp.last_name}
                   </h3>
                   <p className="text-xs text-[var(--text-secondary)] truncate mt-0.5">
-                    {emp.jobPosition || 'No position'}
+                    {emp.job_position || 'No position'}
                   </p>
                   <p className="text-xs text-[var(--text-secondary)] truncate mt-0.5">
                     {emp.department || ''}
@@ -186,7 +186,7 @@ export default function Employees() {
 
                 {/* Status indicator */}
                 <div className="shrink-0">
-                  <StatusIndicator status={emp.attendanceStatus || 'absent'} />
+                  <StatusIndicator status={emp.attendance_status || 'absent'} />
                 </div>
               </div>
             </div>
@@ -206,8 +206,8 @@ export default function Employees() {
               <label className="label" htmlFor="new-emp-fname">First Name *</label>
               <input
                 id="new-emp-fname"
-                value={newEmp.firstName}
-                onChange={(e) => setNewEmp({ ...newEmp, firstName: e.target.value })}
+                value={newEmp.first_name}
+                onChange={(e) => setNewEmp({ ...newEmp, first_name: e.target.value })}
                 placeholder="Jane"
                 className="input-field"
               />
@@ -216,8 +216,8 @@ export default function Employees() {
               <label className="label" htmlFor="new-emp-lname">Last Name *</label>
               <input
                 id="new-emp-lname"
-                value={newEmp.lastName}
-                onChange={(e) => setNewEmp({ ...newEmp, lastName: e.target.value })}
+                value={newEmp.last_name}
+                onChange={(e) => setNewEmp({ ...newEmp, last_name: e.target.value })}
                 placeholder="Smith"
                 className="input-field"
               />

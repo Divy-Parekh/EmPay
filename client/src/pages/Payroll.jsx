@@ -4,7 +4,7 @@ import { formatCurrency, formatDate } from '../utils/formatters';
 import StatusBadge from '../components/common/StatusBadge';
 import PayslipDetail from '../components/payroll/PayslipDetail';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { AlertTriangle, Play, CheckCircle, XCircle, Printer } from 'lucide-react';
+import { AlertTriangle, Play, CheckCircle, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function Payroll() {
@@ -40,12 +40,12 @@ export default function Payroll() {
 
   const handleCreatePayrun = async () => {
     const now = new Date();
-    const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-    const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+    const period_start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const period_end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
     const name = `Payrun ${now.toLocaleString('en', { month: 'short' })} ${now.getFullYear()}`;
 
     setCreating(true);
-    const res = await payrollApi.createPayrun({ name, periodStart, periodEnd });
+    const res = await payrollApi.createPayrun({ name, period_start, period_end });
     if (res.success) {
       toast.success('Payrun created');
       const computeRes = await payrollApi.computePayrun(res.data.id);
@@ -94,14 +94,14 @@ export default function Payroll() {
         loading ? <div className="card p-12 text-center text-[var(--text-secondary)]">Loading dashboard...</div> : dashboard && (
           <div className="space-y-6">
             {/* Warnings */}
-            {(dashboard.warnings?.missingBankAccount?.length > 0 || dashboard.warnings?.missingManager?.length > 0) && (
+            {(dashboard.warnings?.missing_bank_account?.length > 0 || dashboard.warnings?.missing_manager?.length > 0) && (
               <div className="card p-5 border-l-4 border-l-[var(--color-warning)]">
                 <h3 className="flex items-center gap-2 text-sm font-semibold text-[var(--color-warning)] mb-3"><AlertTriangle size={16} />Warnings</h3>
-                {dashboard.warnings.missingBankAccount?.length > 0 && (
-                  <p className="text-sm text-[var(--text-secondary)] mb-1">⚠️ {dashboard.warnings.missingBankAccount.length} employee(s) without Bank Account</p>
+                {dashboard.warnings.missing_bank_account?.length > 0 && (
+                  <p className="text-sm text-[var(--text-secondary)] mb-1">⚠️ {dashboard.warnings.missing_bank_account.length} employee(s) without Bank Account</p>
                 )}
-                {dashboard.warnings.missingManager?.length > 0 && (
-                  <p className="text-sm text-[var(--text-secondary)]">⚠️ {dashboard.warnings.missingManager.length} employee(s) without Manager</p>
+                {dashboard.warnings.missing_manager?.length > 0 && (
+                  <p className="text-sm text-[var(--text-secondary)]">⚠️ {dashboard.warnings.missing_manager.length} employee(s) without Manager</p>
                 )}
               </div>
             )}
@@ -114,7 +114,7 @@ export default function Payroll() {
               ) : dashboard.payruns.map(p => (
                 <div key={p.id} className="flex items-center justify-between py-2 border-b border-[var(--border-color)] last:border-0">
                   <span className="text-sm">{p.name}</span>
-                  <span className="text-xs text-[var(--text-secondary)]">{p.payslipCount} payslips</span>
+                  <span className="text-xs text-[var(--text-secondary)]">{p.payslip_count} payslips</span>
                 </div>
               ))}
             </div>
@@ -129,12 +129,12 @@ export default function Payroll() {
                   ))}</div>
                 </div>
                 <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={dashboard.employerCost?.[costView] || []}>
+                  <BarChart data={dashboard.employer_cost?.[costView] || []}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(51,65,85,0.5)" />
-                    <XAxis dataKey={costView === 'monthly' ? 'month' : 'year'} tick={chartStyle} />
+                    <XAxis dataKey="month" tick={chartStyle} />
                     <YAxis tick={chartStyle} />
                     <Tooltip contentStyle={{ background: '#1E293B', border: '1px solid #334155', borderRadius: 8, color: '#F8FAFC' }} />
-                    <Bar dataKey="cost" fill="#7C3AED" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="total_cost" fill="#7C3AED" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -146,9 +146,9 @@ export default function Payroll() {
                   ))}</div>
                 </div>
                 <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={dashboard.employeeCount?.[countView] || []}>
+                  <BarChart data={dashboard.employee_count?.[countView] || []}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(51,65,85,0.5)" />
-                    <XAxis dataKey={countView === 'monthly' ? 'month' : 'year'} tick={chartStyle} />
+                    <XAxis dataKey="month" tick={chartStyle} />
                     <YAxis tick={chartStyle} />
                     <Tooltip contentStyle={{ background: '#1E293B', border: '1px solid #334155', borderRadius: 8, color: '#F8FAFC' }} />
                     <Bar dataKey="count" fill="#10B981" radius={[4, 4, 0, 0]} />
@@ -174,12 +174,12 @@ export default function Payroll() {
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
                   <h3 className="font-semibold">{pr.name}</h3>
-                  <p className="text-xs text-[var(--text-secondary)]">{formatDate(pr.periodStart)} — {formatDate(pr.periodEnd)}</p>
+                  <p className="text-xs text-[var(--text-secondary)]">{formatDate(pr.period_start)} — {formatDate(pr.period_end)}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <StatusBadge status={pr.status} />
-                  {pr.status === 'computed' && <button onClick={() => handleValidate(pr.id)} className="btn-success flex items-center gap-1 text-sm px-3 py-1.5"><CheckCircle size={14} />Validate</button>}
-                  {pr.status !== 'cancelled' && pr.status !== 'validated' && <button onClick={() => handleCancel(pr.id)} className="btn-danger flex items-center gap-1 text-sm px-3 py-1.5"><XCircle size={14} />Cancel</button>}
+                  {pr.status === 'computed' && <button onClick={() => handleValidate(pr.id)} className="btn-success flex items-center gap-1 text-sm px-3 py-1.5">Validate</button>}
+                  {pr.status !== 'cancelled' && pr.status !== 'validated' && <button onClick={() => handleCancel(pr.id)} className="btn-danger flex items-center gap-1 text-sm px-3 py-1.5">Cancel</button>}
                 </div>
               </div>
 
@@ -190,12 +190,12 @@ export default function Payroll() {
                     <tbody>
                       {pr.payslips.map(ps => (
                         <tr key={ps.id} onClick={() => handlePayslipClick(ps.id)} className="cursor-pointer">
-                          <td className="text-xs">{formatDate(ps.periodStart)} – {formatDate(ps.periodEnd)}</td>
-                          <td className="font-medium">{ps.employeeName}</td>
-                          <td>{formatCurrency(ps.employerCost)}</td>
-                          <td>{formatCurrency(ps.basicAmount)}</td>
-                          <td>{formatCurrency(ps.grossWage)}</td>
-                          <td className="font-semibold text-[var(--color-success)]">{formatCurrency(ps.netWage)}</td>
+                          <td className="text-xs">{formatDate(ps.period_start)} – {formatDate(ps.period_end)}</td>
+                          <td className="font-medium">{ps.employee_name}</td>
+                          <td>{formatCurrency(ps.employer_cost)}</td>
+                          <td>{formatCurrency(ps.basic_amount)}</td>
+                          <td>{formatCurrency(ps.gross_wage)}</td>
+                          <td className="font-semibold text-[var(--color-success)]">{formatCurrency(ps.net_wage)}</td>
                           <td><StatusBadge status={ps.status} /></td>
                         </tr>
                       ))}

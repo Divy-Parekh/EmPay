@@ -7,12 +7,12 @@ import toast from 'react-hot-toast';
 
 export default function Signup() {
   const [form, setForm] = useState({
-    companyName: '',
+    company_name: '',
     name: '',
     email: '',
     phone: '',
     password: '',
-    confirmPassword: '',
+    confirm_password: '',
   });
   const [logo, setLogo] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
@@ -36,11 +36,11 @@ export default function Signup() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.companyName || !form.name || !form.email || !form.password) {
+    if (!form.company_name || !form.name || !form.email || !form.password) {
       toast.error('Please fill in all required fields');
       return;
     }
-    if (form.password !== form.confirmPassword) {
+    if (form.password !== form.confirm_password) {
       toast.error('Passwords do not match');
       return;
     }
@@ -52,13 +52,13 @@ export default function Signup() {
     setLoading(true);
 
     const formData = new FormData();
-    formData.append('companyName', form.companyName);
+    formData.append('company_name', form.company_name);
     formData.append('name', form.name);
     formData.append('email', form.email);
     formData.append('phone', form.phone);
     formData.append('password', form.password);
-    formData.append('confirmPassword', form.confirmPassword);
-    if (logo) formData.append('companyLogo', logo);
+    formData.append('confirm_password', form.confirm_password);
+    if (logo) formData.append('company_logo', logo);
 
     const res = await authApi.signup(formData);
     setLoading(false);
@@ -121,8 +121,8 @@ export default function Signup() {
                 <label className="label" htmlFor="signup-company">Company Name *</label>
                 <input
                   id="signup-company"
-                  name="companyName"
-                  value={form.companyName}
+                  name="company_name"
+                  value={form.company_name}
                   onChange={handleChange}
                   placeholder="Odoo India"
                   className="input-field"
@@ -222,9 +222,9 @@ export default function Signup() {
               <label className="label" htmlFor="signup-confirm">Confirm Password *</label>
               <input
                 id="signup-confirm"
-                name="confirmPassword"
+                name="confirm_password"
                 type="password"
-                value={form.confirmPassword}
+                value={form.confirm_password}
                 onChange={handleChange}
                 placeholder="Re-enter password"
                 className="input-field"

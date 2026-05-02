@@ -9,7 +9,7 @@ const initialState = {
   company: null,
   permissions: null,
   token: null,
-  isCheckedIn: false,
+  is_checked_in: false,
   loading: true,
 };
 
@@ -28,7 +28,7 @@ function authReducer(state, action) {
     case 'LOGOUT':
       return { ...initialState, loading: false };
     case 'SET_CHECKED_IN':
-      return { ...state, isCheckedIn: action.payload };
+      return { ...state, is_checked_in: action.payload };
     case 'SET_LOADING':
       return { ...state, loading: action.payload };
     case 'UPDATE_EMPLOYEE':
@@ -52,6 +52,10 @@ export function AuthProvider({ children }) {
           type: 'LOGIN',
           payload: { ...parsed, token },
         });
+        /* Also fetch latest attendance status */
+        attendanceApi.getStatus().then(res => {
+          if (res.success) dispatch({ type: 'SET_CHECKED_IN', payload: res.data.is_checked_in });
+        });
       } catch {
         localStorage.removeItem('empay_token');
         localStorage.removeItem('empay_user');
@@ -67,6 +71,10 @@ export function AuthProvider({ children }) {
     localStorage.setItem('empay_token', token);
     localStorage.setItem('empay_user', JSON.stringify(rest));
     dispatch({ type: 'LOGIN', payload: data });
+    /* Fetch status after login */
+    attendanceApi.getStatus().then(res => {
+      if (res.success) dispatch({ type: 'SET_CHECKED_IN', payload: res.data.is_checked_in });
+    });
   };
 
   const logout = () => {
@@ -77,17 +85,31 @@ export function AuthProvider({ children }) {
 
   const toggleCheckIn = async () => {
     try {
-      if (state.isCheckedIn) {
+      if (state.is_checked_in) {
         const res = await attendanceApi.checkOut();
-        if (res.success) dispatch({ type: 'SET_CHECKED_IN', payload: false });
+        if (res.success) {
+          dispatch({ type: 'SET_CHECKED_IN', payload: false });
+          return res;
+        } else if (res.error?.message?.includes('No active check-in')) {
+          // If backend says no active check-in, force frontend to false
+          dispatch({ type: 'SET_CHECKED_IN', payload: false });
+          return { success: true, forced: true };
+        }
         return res;
       } else {
         const res = await attendanceApi.checkIn();
-        if (res.success) dispatch({ type: 'SET_CHECKED_IN', payload: true });
+        if (res.success) {
+          dispatch({ type: 'SET_CHECKED_IN', payload: true });
+          return res;
+        } else if (res.error?.message?.includes('Already checked in')) {
+          // If backend says already checked in, force frontend to true
+          dispatch({ type: 'SET_CHECKED_IN', payload: true });
+          return { success: true, forced: true };
+        }
         return res;
       }
     } catch {
-      return { success: false };
+      return { success: false, error: { message: 'Connection error' } };
     }
   };
 

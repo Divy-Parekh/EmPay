@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 
 export default function ResumeTab({ employee, canEdit, onUpdate }) {
   const [about, setAbout] = useState(employee.about || '');
-  const [jobLove, setJobLove] = useState(employee.jobLove || '');
+  const [job_love, setJobLove] = useState(employee.job_love || '');
   const [interests, setInterests] = useState(employee.interests || '');
   const [saving, setSaving] = useState(false);
   const [newSkill, setNewSkill] = useState('');
@@ -15,7 +15,7 @@ export default function ResumeTab({ employee, canEdit, onUpdate }) {
 
   const handleSaveResume = async () => {
     setSaving(true);
-    const res = await employeeApi.updateResume(employee.id, { about, jobLove, interests });
+    const res = await employeeApi.updateResume(employee.id, { about, job_love, interests });
     setSaving(false);
     if (res.success) toast.success('Resume updated');
     else toast.error('Failed to update');
@@ -55,7 +55,7 @@ export default function ResumeTab({ employee, canEdit, onUpdate }) {
         </div>
         <div className="card p-5">
           <label className="label">What I Love About My Job</label>
-          <textarea value={jobLove} onChange={e => setJobLove(e.target.value)} disabled={!canEdit} rows={3} className="input-field resize-none" placeholder="What motivates you..." />
+          <textarea value={job_love} onChange={e => setJobLove(e.target.value)} disabled={!canEdit} rows={3} className="input-field resize-none" placeholder="What motivates you..." />
         </div>
         <div className="card p-5">
           <label className="label">My Interests & Hobbies</label>

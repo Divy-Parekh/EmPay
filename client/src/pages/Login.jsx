@@ -23,7 +23,7 @@ export default function Login() {
     setLoading(true);
     const payload = loginId.includes('@')
       ? { email: loginId, password }
-      : { loginId, password };
+      : { login_id: loginId, password };
 
     const res = await authApi.login(payload);
     setLoading(false);

@@ -16,15 +16,14 @@ pool.on('error', (err) => {
 
 /**
  * Execute a raw SQL query with parameterized values.
- * @param {string} text - SQL query string with $1, $2, ... placeholders
- * @param {Array} params - Parameter values
- * @returns {Promise<import('pg').QueryResult>}
+ * Returns results in native snake_case.
  */
-const query = (text, params) => pool.query(text, params);
+const query = async (text, params) => {
+  return pool.query(text, params);
+};
 
 /**
  * Get a client from the pool for transactions.
- * @returns {Promise<import('pg').PoolClient>}
  */
 const getClient = () => pool.connect();
 

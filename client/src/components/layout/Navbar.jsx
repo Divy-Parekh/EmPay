@@ -6,7 +6,7 @@ import { Menu, User, LogOut, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function Navbar({ onMenuToggle }) {
-  const { user, employee, isCheckedIn, toggleCheckIn, logout } = useAuth();
+  const { user, employee, is_checked_in, toggleCheckIn, logout } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
   const dropdownRef = useRef(null);
@@ -28,7 +28,7 @@ export default function Navbar({ onMenuToggle }) {
     const res = await toggleCheckIn();
     setCheckingIn(false);
     if (res?.success) {
-      toast.success(isCheckedIn ? 'Checked out successfully' : 'Checked in successfully');
+      toast.success(is_checked_in ? 'Checked out successfully' : 'Checked in successfully');
     } else {
       toast.error(res?.error?.message || 'Failed to update status');
     }
@@ -70,7 +70,7 @@ export default function Navbar({ onMenuToggle }) {
           disabled={checkingIn}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
             ${
-              isCheckedIn
+              is_checked_in
                 ? 'bg-[rgba(16,185,129,0.15)] text-[#34D399] hover:bg-[rgba(16,185,129,0.25)]'
                 : 'bg-[rgba(239,68,68,0.15)] text-[#F87171] hover:bg-[rgba(239,68,68,0.25)]'
             }
@@ -80,15 +80,15 @@ export default function Navbar({ onMenuToggle }) {
         >
           {/* Status dot */}
           <span
-            className={`w-2.5 h-2.5 rounded-full ${isCheckedIn ? 'animate-pulse-dot' : ''}`}
+            className={`w-2.5 h-2.5 rounded-full ${is_checked_in ? 'animate-pulse-dot' : ''}`}
             style={{
-              background: isCheckedIn ? 'var(--color-success)' : 'var(--color-danger)',
-              boxShadow: isCheckedIn
+              background: is_checked_in ? 'var(--color-success)' : 'var(--color-danger)',
+              boxShadow: is_checked_in
                 ? '0 0 8px rgba(16, 185, 129, 0.5)'
                 : '0 0 8px rgba(239, 68, 68, 0.5)',
             }}
           />
-          <span>{checkingIn ? '...' : isCheckedIn ? 'Check Out' : 'Check In'}</span>
+          <span>{checkingIn ? '...' : is_checked_in ? 'Check Out' : 'Check In'}</span>
         </button>
 
         {/* Profile dropdown */}
@@ -99,9 +99,9 @@ export default function Navbar({ onMenuToggle }) {
             id="navbar-profile-btn"
           >
             {/* Avatar */}
-            {employee?.profilePicture ? (
+            {employee?.profile_picture ? (
               <img
-                src={employee.profilePicture}
+                src={employee.profile_picture}
                 alt=""
                 className="w-8 h-8 rounded-full object-cover ring-2 ring-[var(--border-color)]"
               />
@@ -112,7 +112,7 @@ export default function Navbar({ onMenuToggle }) {
                   background: 'linear-gradient(135deg, var(--color-primary), #9333EA)',
                 }}
               >
-                {getInitials(employee?.firstName, employee?.lastName)}
+                {getInitials(employee?.first_name, employee?.last_name)}
               </div>
             )}
             <ChevronDown
@@ -136,7 +136,7 @@ export default function Navbar({ onMenuToggle }) {
               {/* User info */}
               <div className="px-4 py-3 border-b border-[var(--border-color)]">
                 <p className="text-sm font-semibold text-[var(--text-primary)] truncate">
-                  {employee?.firstName} {employee?.lastName}
+                  {employee?.first_name} {employee?.last_name}
                 </p>
                 <p className="text-xs text-[var(--text-secondary)] truncate">{user?.email}</p>
               </div>

@@ -7,9 +7,9 @@ import toast from 'react-hot-toast';
 export default function SalaryInfoTab({ employeeId, canEdit }) {
   const [wage, setWage] = useState(0);
   const [structure, setStructure] = useState({
-    workingDays: 22, breakTimeHrs: 1, basicPct: 50, hraPct: 50,
-    standardAllowance: 4167, performanceBonusPct: 8.33, leaveTravelPct: 8.333,
-    pfRate: 12, professionalTax: 200,
+    working_days: 22, break_time_hrs: 1, basic_pct: 50, hra_pct: 50,
+    standard_allowance: 4167, performance_bonus_pct: 8.33, leave_travel_pct: 8.333,
+    pf_rate: 12, professional_tax: 200,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -20,8 +20,9 @@ export default function SalaryInfoTab({ employeeId, canEdit }) {
     setLoading(true);
     const res = await employeeApi.getSalary(employeeId);
     if (res.success && res.data) {
-      setWage(res.data.monthlyWage || 0);
-      setStructure(prev => ({ ...prev, ...res.data }));
+      const { structure } = res.data;
+      setWage(structure.monthly_wage || 0);
+      setStructure(prev => ({ ...prev, ...structure }));
     }
     setLoading(false);
   };
@@ -30,7 +31,7 @@ export default function SalaryInfoTab({ employeeId, canEdit }) {
 
   const handleSave = async () => {
     setSaving(true);
-    const res = await employeeApi.updateSalary(employeeId, { monthlyWage: wage, ...structure });
+    const res = await employeeApi.updateSalary(employeeId, { monthly_wage: wage, ...structure });
     setSaving(false);
     if (res.success) toast.success('Salary updated');
     else toast.error('Failed to update salary');
@@ -57,11 +58,11 @@ export default function SalaryInfoTab({ employeeId, canEdit }) {
           </div>
           <div>
             <label className="label">Working Days/Month</label>
-            <input type="number" value={structure.workingDays} onChange={e => setStructure({...structure, workingDays: Number(e.target.value)})} disabled={!canEdit} className="input-field" />
+            <input type="number" value={structure.working_days} onChange={e => setStructure({...structure, working_days: Number(e.target.value)})} disabled={!canEdit} className="input-field" />
           </div>
           <div>
             <label className="label">Break Time (hrs)</label>
-            <input type="number" step="0.5" value={structure.breakTimeHrs} onChange={e => setStructure({...structure, breakTimeHrs: Number(e.target.value)})} disabled={!canEdit} className="input-field" />
+            <input type="number" step="0.5" value={structure.break_time_hrs} onChange={e => setStructure({...structure, break_time_hrs: Number(e.target.value)})} disabled={!canEdit} className="input-field" />
           </div>
         </div>
       </div>

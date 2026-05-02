@@ -35,10 +35,10 @@ async function authenticate(req, res, next) {
 
     req.user = {
       id: result.rows[0].id,
-      loginId: result.rows[0].login_id,
+      login_id: result.rows[0].login_id,
       email: result.rows[0].email,
       role: result.rows[0].role,
-      companyId: result.rows[0].company_id,
+      company_id: result.rows[0].company_id,
     };
 
     next();
@@ -58,12 +58,12 @@ async function authenticate(req, res, next) {
 
 /**
  * Generate a JWT token for a user.
- * @param {object} user - User object with id, role, companyId
+ * @param {object} user - User object with id, role, company_id
  * @returns {string} JWT token
  */
 function generateToken(user) {
   return jwt.sign(
-    { id: user.id, role: user.role, companyId: user.company_id || user.companyId },
+    { id: user.id, role: user.role, companyId: user.company_id },
     env.jwtSecret,
     { expiresIn: env.jwtExpiresIn }
   );

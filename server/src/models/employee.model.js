@@ -1,11 +1,11 @@
 const { query } = require('../config/db');
 
 const EmployeeModel = {
-  async create({ userId, companyId, firstName, lastName, email, phone, dateOfJoining }) {
+  async create({ user_id, company_id, first_name, last_name, email, phone, date_of_joining }) {
     const result = await query(
       `INSERT INTO employees (user_id, company_id, first_name, last_name, email, phone, date_of_joining)
        VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, CURRENT_DATE)) RETURNING *`,
-      [userId, companyId, firstName, lastName, email, phone, dateOfJoining]
+      [user_id, company_id, first_name, last_name, email, phone, date_of_joining]
     );
     return result.rows[0];
   },
@@ -13,10 +13,12 @@ const EmployeeModel = {
   async findById(id) {
     const result = await query(
       `SELECT e.*, u.login_id, u.role,
-              m.first_name as manager_first_name, m.last_name as manager_last_name
+              (m.first_name || ' ' || m.last_name) as manager_name,
+              c.name as company_name
        FROM employees e
        JOIN users u ON u.id = e.user_id
        LEFT JOIN employees m ON m.id = e.manager_id
+       JOIN companies c ON c.id = e.company_id
        WHERE e.id = $1`,
       [id]
     );
@@ -32,9 +34,15 @@ const EmployeeModel = {
     let sql = `
       SELECT e.id, e.first_name, e.last_name, e.email, e.phone, e.job_position,
              e.department, e.profile_picture, e.location, e.user_id,
-             u.login_id, u.role
+             u.login_id, u.role,
+             CASE
+               WHEN a.status = 'present' AND a.check_out IS NULL THEN 'present'
+               WHEN a.status = 'on_leave' THEN 'on_leave'
+               ELSE 'absent'
+             END as attendance_status
       FROM employees e
       JOIN users u ON u.id = e.user_id
+      LEFT JOIN attendance a ON a.employee_id = e.id AND a.date = CURRENT_DATE
       WHERE e.company_id = $1 AND u.is_active = TRUE
     `;
     const params = [companyId];
@@ -55,9 +63,9 @@ const EmployeeModel = {
     let idx = 2;
 
     const fieldMap = {
-      firstName: 'first_name', lastName: 'last_name', phone: 'phone',
-      jobPosition: 'job_position', department: 'department',
-      managerId: 'manager_id', location: 'location', profilePicture: 'profile_picture',
+      first_name: 'first_name', last_name: 'last_name', phone: 'phone',
+      job_position: 'job_position', department: 'department',
+      manager_id: 'manager_id', location: 'location', profile_picture: 'profile_picture',
     };
 
     for (const [key, col] of Object.entries(fieldMap)) {
@@ -78,12 +86,12 @@ const EmployeeModel = {
     return result.rows[0];
   },
 
-  async updateResume(id, { about, jobLove, interests }) {
+  async updateResume(id, { about, job_love, interests }) {
     const result = await query(
       `UPDATE employees SET about = COALESCE($2, about), job_love = COALESCE($3, job_love),
        interests = COALESCE($4, interests), updated_at = NOW()
        WHERE id = $1 RETURNING *`,
-      [id, about, jobLove, interests]
+      [id, about, job_love, interests]
     );
     return result.rows[0];
   },
@@ -104,9 +112,9 @@ const EmployeeModel = {
         emp_code = COALESCE($12, emp_code),
         updated_at = NOW()
        WHERE id = $1 RETURNING *`,
-      [id, fields.dateOfBirth, fields.address, fields.nationality, fields.gender,
-       fields.maritalStatus, fields.bankAccNumber, fields.bankName, fields.ifscCode,
-       fields.panNumber, fields.uanNumber, fields.empCode]
+      [id, fields.date_of_birth, fields.address, fields.nationality, fields.gender,
+       fields.marital_status, fields.bank_acc_number, fields.bank_name, fields.ifsc_code,
+       fields.pan_number, fields.uan_number, fields.emp_code]
     );
     return result.rows[0];
   },

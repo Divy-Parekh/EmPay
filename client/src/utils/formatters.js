@@ -80,13 +80,13 @@ export function numberToWords(num) {
 
 /* Compute salary components from wage and structure */
 export function computeSalary(wage, structure = {}) {
-  const basicPct = structure.basicPct || 50;
-  const hraPct = structure.hraPct || 50;
-  const stdAllowance = structure.standardAllowance || 4167;
-  const perfBonusPct = structure.performanceBonusPct || 8.33;
-  const ltaPct = structure.leaveTravelPct || 8.333;
-  const pfRate = structure.pfRate || 12;
-  const profTax = structure.professionalTax || 200;
+  const basicPct = structure.basic_pct || structure.basicPct || 50;
+  const hraPct = structure.hra_pct || structure.hraPct || 50;
+  const stdAllowance = structure.standard_allowance || structure.standardAllowance || 4167;
+  const perfBonusPct = structure.performance_bonus_pct || structure.performanceBonusPct || 8.33;
+  const ltaPct = structure.leave_travel_pct || structure.leaveTravelPct || 8.333;
+  const pfRate = structure.pf_rate || structure.pfRate || 12;
+  const profTax = structure.professional_tax || structure.professionalTax || 200;
 
   const basic = (wage * basicPct) / 100;
   const hra = (basic * hraPct) / 100;

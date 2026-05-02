@@ -15,7 +15,8 @@ import CompanyDetails from './pages/CompanyDetails';
 
 /* Route guard — redirects to /login if unauthenticated */
 function ProtectedRoute({ children }) {
-  const { token } = useAuth();
+  const { token, loading } = useAuth();
+  if (loading) return null; // or a loading spinner
   if (!token) return <Navigate to="/login" replace />;
   return children;
 }
@@ -24,12 +25,18 @@ function ProtectedRoute({ children }) {
 function RoleRoute({ children, allowedRoles }) {
   const { user } = useAuth();
   if (!user || !allowedRoles.includes(user.role)) {
-    return <Navigate to="/dashboard/employees" replace />;
+    // If not allowed, redirect to a safe page like attendance or profile
+    return <Navigate to="/dashboard/attendance" replace />;
   }
   return children;
 }
 
 export default function App() {
+  const { user } = useAuth();
+  
+  // Define the default tab based on user role
+  const defaultTab = user?.role === 'employee' ? 'attendance' : 'employees';
+
   return (
     <Routes>
       {/* Public routes */}
@@ -45,11 +52,28 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="employees" replace />} />
-        <Route path="employees" element={<Employees />} />
-        <Route path="employees/:id" element={<EmployeeDetail />} />
+        <Route index element={<Navigate to={defaultTab} replace />} />
+        
+        <Route 
+          path="employees" 
+          element={
+            <RoleRoute allowedRoles={['admin', 'hr_officer', 'payroll_officer']}>
+              <Employees />
+            </RoleRoute>
+          } 
+        />
+        <Route 
+          path="employees/:id" 
+          element={
+            <RoleRoute allowedRoles={['admin', 'hr_officer', 'payroll_officer']}>
+              <EmployeeDetail />
+            </RoleRoute>
+          } 
+        />
+        
         <Route path="attendance" element={<Attendance />} />
         <Route path="time-off" element={<TimeOff />} />
+        
         <Route
           path="payroll"
           element={

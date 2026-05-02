@@ -32,10 +32,10 @@ const SalaryModel = {
         professional_tax = COALESCE($11, professional_tax),
         updated_at = NOW()
        WHERE employee_id = $1 RETURNING *`,
-      [employeeId, fields.monthlyWage, fields.workingDays, fields.breakTimeHrs,
-       fields.basicPct, fields.hraPct, fields.standardAllowance,
-       fields.performanceBonusPct, fields.leaveTravelPct,
-       fields.pfRate, fields.professionalTax]
+      [employeeId, fields.monthly_wage, fields.working_days, fields.break_time_hrs,
+       fields.basic_pct, fields.hra_pct, fields.standard_allowance,
+       fields.performance_bonus_pct, fields.leave_travel_pct,
+       fields.pf_rate, fields.professional_tax]
     );
     return result.rows[0];
   },

@@ -43,8 +43,8 @@ export default function Settings() {
                 <tr><td colSpan={4} className="text-center py-8 text-[var(--text-secondary)]">No users found</td></tr>
               ) : users.map(u => (
                 <tr key={u.id}>
-                  <td className="font-medium">{u.name || `${u.firstName || ''} ${u.lastName || ''}`}</td>
-                  <td className="text-[var(--text-secondary)]">{u.loginId}</td>
+                  <td className="font-medium">{u.name || `${u.first_name || ''} ${u.last_name || ''}`}</td>
+                  <td className="text-[var(--text-secondary)]">{u.login_id}</td>
                   <td className="text-[var(--text-secondary)]">{u.email}</td>
                   <td>
                     <select

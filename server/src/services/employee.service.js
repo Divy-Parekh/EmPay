@@ -25,32 +25,32 @@ const EmployeeService = {
     return { ...employee, skills, certifications };
   },
 
-  async create(companyId, { firstName, lastName, email, phone, jobPosition, department, managerId, location, dateOfJoining }) {
+  async create(company_id, { first_name, last_name, email, phone, job_position, department, manager_id, location, date_of_joining, role = 'employee' }) {
     // Check duplicate email
     const existing = await UserModel.findByEmail(email);
     if (existing) throw Object.assign(new Error('Email already registered'), { status: 409, code: 'CONFLICT' });
 
-    const company = await CompanyModel.findById(companyId);
+    const company = await CompanyModel.findById(company_id);
     const prefix = company.prefix;
 
     // Generate login ID and password
-    const loginId = await generateLoginId(prefix, firstName, lastName, companyId);
+    const loginId = await generateLoginId(prefix, first_name, last_name, company_id);
     const plainPassword = generatePassword();
     const passwordHash = await hashPassword(plainPassword);
 
     // Create user
     const user = await UserModel.create({
-      loginId, email, passwordHash, role: 'employee', companyId,
+      login_id: loginId, email, password_hash: passwordHash, role, company_id,
     });
 
     // Create employee
     const employee = await EmployeeModel.create({
-      userId: user.id, companyId, firstName, lastName, email, phone, dateOfJoining,
+      user_id: user.id, company_id, first_name, last_name, email, phone, date_of_joining,
     });
 
     // Update optional fields
-    if (jobPosition || department || managerId || location) {
-      await EmployeeModel.update(employee.id, { jobPosition, department, managerId, location });
+    if (job_position || department || manager_id || location) {
+      await EmployeeModel.update(employee.id, { job_position, department, manager_id, location });
     }
 
     // Create default salary structure
@@ -61,13 +61,13 @@ const EmployeeService = {
 
     // Allocate default leave balances
     const currentYear = new Date().getFullYear();
-    const timeOffTypes = await TimeOffModel.getTypes(companyId);
+    const timeOffTypes = await TimeOffModel.getTypes(company_id);
     for (const type of timeOffTypes) {
       if (type.default_days > 0) {
         await TimeOffModel.upsertBalance({
-          employeeId: employee.id,
-          timeOffTypeId: type.id,
-          totalAllocated: type.default_days,
+          employee_id: employee.id,
+          time_off_type_id: type.id,
+          total_allocated: type.default_days,
           year: currentYear,
         });
       }
@@ -77,9 +77,9 @@ const EmployeeService = {
     sendCredentialsEmail(email, loginId, plainPassword, company.name);
 
     return {
-      employee: { id: employee.id, firstName, lastName, email },
+      employee: { id: employee.id, first_name, last_name, email },
       loginId,
-      generatedPassword: plainPassword, // Return so admin can see it too
+      generatedPassword: plainPassword,
       message: `Credentials sent to ${email}`,
     };
   },
@@ -100,8 +100,8 @@ const EmployeeService = {
     const employee = await EmployeeModel.findById(id);
     if (!employee) throw Object.assign(new Error('Employee not found'), { status: 404 });
     // Delete cascades from user → employee → attendance, etc.
-    const { query: dbQuery } = require('../config/db');
-    await dbQuery('DELETE FROM users WHERE id = $1', [employee.user_id]);
+    const { pool } = require('../config/db');
+    await pool.query('DELETE FROM users WHERE id = $1', [employee.user_id]);
     return { message: 'Employee deleted' };
   },
 
@@ -125,7 +125,7 @@ const EmployeeService = {
 
   // --- Skills ---
   async addSkill(employeeId, data) {
-    return SkillModel.create({ employeeId, ...data });
+    return SkillModel.create({ employee_id: employeeId, ...data });
   },
 
   async removeSkill(id, employeeId) {
@@ -136,7 +136,7 @@ const EmployeeService = {
 
   // --- Certifications ---
   async addCertification(employeeId, data) {
-    return CertificationModel.create({ employeeId, ...data });
+    return CertificationModel.create({ employee_id: employeeId, ...data });
   },
 
   async removeCertification(id, employeeId) {
