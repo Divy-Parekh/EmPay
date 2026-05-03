@@ -58,16 +58,24 @@ export default function Sidebar({ isOpen, onClose }) {
         {/* Header: Brand Branding */}
         <div className="flex items-center gap-3 px-6 py-6 border-b border-[#374151]">
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-emerald-500 to-blue-600 shadow-lg shadow-emerald-500/20 shrink-0"
+            className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-emerald-500 to-blue-600 shadow-lg shadow-emerald-500/20 shrink-0 overflow-hidden"
           >
-            <Zap size={22} className="text-white fill-emerald-300" />
+            {company?.logo_url ? (
+              <img 
+                src={`${import.meta.env.VITE_API_URL.replace('/api', '')}${company.logo_url}`} 
+                alt="Brand" 
+                className="w-full h-full object-cover" 
+              />
+            ) : (
+              <Zap size={22} className="text-white fill-emerald-300" />
+            )}
           </div>
-          <div className="min-w-0">
-            <h2 className="text-base font-black text-[#f9fafb] tracking-tight uppercase leading-tight">
-              EmPay
+          <div className="min-w-0 flex-1">
+            <h2 className="text-base font-black text-[#f9fafb] tracking-tight uppercase leading-tight truncate">
+              {company?.name || 'EmPay'}
             </h2>
             <p className="text-[10px] text-[#9ca3af] font-bold uppercase tracking-[0.1em] opacity-80">
-              Smart HRMS
+              {company?.logo_url ? 'Smart HRMS' : 'Enterprise ERP'}
             </p>
           </div>
         </div>

@@ -313,14 +313,36 @@ const ChatbotService = {
       userId: user.id,
     };
 
-    // 5. Dispatch to provider
+    // 5. Dispatch to provider with Fallback
     const provider = useGroq ? 'Groq' : 'Gemini';
-    console.log(`🤖 Chatbot using ${provider} | User: ${employee.first_name} (${user.role})`);
+    console.log(`🤖 Chatbot starting with ${provider} | User: ${employee.first_name} (${user.role})`);
 
-    if (useGroq) {
-      return chatWithGroq(systemPrompt, message, conversationHistory, context);
-    } else {
-      return chatWithGemini(systemPrompt, message, conversationHistory, context);
+    try {
+      if (useGroq) {
+        return await chatWithGroq(systemPrompt, message, conversationHistory, context);
+      } else {
+        return await chatWithGemini(systemPrompt, message, conversationHistory, context);
+      }
+    } catch (err) {
+      console.error(`❌ Chatbot ${provider} failed:`, err.message);
+      
+      // Fallback to Gemini if Groq failed and Gemini is available
+      if (useGroq && env.geminiApiKey) {
+        console.log('🔄 Falling back to Gemini provider...');
+        try {
+          return await chatWithGemini(systemPrompt, message, conversationHistory, context);
+        } catch (fallbackErr) {
+          console.error('❌ Chatbot Fallback failed:', fallbackErr.message);
+          throw fallbackErr;
+        }
+      }
+      
+      // If no fallback possible or fallback also failed, check if it's a rate limit
+      if (err.message?.includes('Rate limit') || err.status === 429) {
+        throw Object.assign(new Error('The AI assistant is temporarily busy. Please try again in a few seconds.'), { status: 429, code: 'RATE_LIMITED' });
+      }
+      
+      throw err;
     }
   },
 };

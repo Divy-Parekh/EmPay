@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { authApi } from '../api/auth.api';
-import { UserPlus, Eye, EyeOff, Upload, Zap } from 'lucide-react';
+import { UserPlus, Eye, EyeOff, Upload, Zap, ShieldCheck, Globe } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function Signup() {
@@ -58,202 +58,193 @@ export default function Signup() {
     formData.append('phone', form.phone);
     formData.append('password', form.password);
     formData.append('confirm_password', form.confirm_password);
-    if (logo) formData.append('company_logo', logo);
+    if (logo) formData.append('companyLogo', logo);
 
-    const res = await authApi.signup(formData);
-    setLoading(false);
-
-    if (res.success) {
-      login(res.data);
-      toast.success('Company registered successfully!');
-      navigate('/dashboard/employees');
-    } else {
-      toast.error(res.error?.message || 'Signup failed');
+    try {
+      const res = await authApi.signup(formData);
+      if (res.success) {
+        login(res.data);
+        toast.success('Company registered successfully!');
+        navigate('/dashboard/employees');
+      } else {
+        toast.error(res.error?.message || 'Signup failed');
+      }
+    } catch (err) {
+      toast.error('Connection error. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4"
-      style={{
-        background: 'radial-gradient(ellipse at bottom, #1a1a2e 0%, #0F172A 50%, #0a0a1a 100%)',
-      }}
-    >
-      {/* Floating orb decorations */}
-      <div className="fixed top-40 right-10 w-80 h-80 rounded-full opacity-15 blur-3xl pointer-events-none"
-        style={{ background: 'var(--color-primary)' }} />
-      <div className="fixed bottom-10 left-10 w-64 h-64 rounded-full opacity-10 blur-3xl pointer-events-none"
-        style={{ background: '#EC4899' }} />
-
-      <div className="w-full max-w-md animate-fade-in-up">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
-            style={{
-              background: 'linear-gradient(135deg, var(--color-primary), #9333EA)',
-              boxShadow: '0 8px 32px rgba(124, 58, 237, 0.4)',
-            }}
-          >
-            <Zap size={28} className="text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-white">EmPay</h1>
-          <p className="text-[var(--text-secondary)] text-sm mt-1">Register your company</p>
+    <div className="min-h-screen flex flex-col md:flex-row overflow-hidden bg-[#111827]">
+      {/* Left Pane — The Visual Brand Side */}
+      <div 
+        className="hidden md:flex w-1/2 flex-col justify-center items-center p-12 relative overflow-hidden"
+        style={{
+          background: 'linear-gradient(135deg, #1e3a8a 0%, #10b981 100%)', // Matching Login page emerald gradient
+        }}
+      >
+        {/* Animated background elements */}
+        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-white blur-[120px] animate-pulse" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-300 blur-[100px]" />
         </div>
 
-        {/* Card */}
-        <div
-          className="rounded-2xl p-8"
-          style={{
-            background: 'rgba(30, 41, 59, 0.7)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(51, 65, 85, 0.5)',
-            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.4)',
-          }}
-        >
-          <h2 className="text-xl font-semibold text-white mb-1">Create your account</h2>
-          <p className="text-[var(--text-secondary)] text-sm mb-6">Admin registration for new company</p>
+        <div className="relative z-10 text-center max-w-lg">
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl mb-8 bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl">
+            <UserPlus size={48} className="text-white fill-emerald-400" />
+          </div>
+          <h1 className="text-5xl font-extrabold text-white mb-6 tracking-tight">
+            Join <span className="text-emerald-300">EmPay</span>
+          </h1>
+          <p className="text-blue-50 text-xl leading-relaxed font-medium opacity-90">
+            Launch your company on the world's most intelligent HRMS platform. Automate payroll, attendance, and employee insights in minutes.
+          </p>
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Company Name + Logo */}
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <label className="label" htmlFor="signup-company">Company Name *</label>
+        {/* Feature badges */}
+        <div className="absolute bottom-12 left-12 right-12 flex justify-center gap-6">
+          <div className="px-4 py-2 rounded-full bg-black/20 backdrop-blur-sm border border-white/10 text-white/80 text-xs font-semibold flex items-center gap-2">
+            <Globe size={14} className="text-emerald-400" /> Multi-region Compliant
+          </div>
+          <div className="px-4 py-2 rounded-full bg-black/20 backdrop-blur-sm border border-white/10 text-white/80 text-xs font-semibold flex items-center gap-2">
+            <ShieldCheck size={14} className="text-blue-400" /> AES-256 Encryption
+          </div>
+        </div>
+      </div>
+
+      {/* Right Pane — The Signup Form Side */}
+      <div className="w-full md:w-1/2 flex flex-col justify-start md:justify-center items-center p-6 lg:p-12 bg-[#111827] overflow-y-auto">
+        <div className="w-full max-w-md py-8">
+          {/* Mobile Logo */}
+          <div className="md:hidden flex flex-col items-center mb-10">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-500 flex items-center justify-center mb-4 shadow-emerald-500/20 shadow-xl">
+              <Zap size={28} className="text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-white">EmPay HRMS</h2>
+          </div>
+
+          <div className="mb-10 text-left">
+            <h2 className="text-3xl font-bold text-white mb-3">Create Company</h2>
+            <p className="text-[#9ca3af] text-lg font-medium">Register your organization to get started</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Company Section */}
+            <div className="flex gap-4">
+              <div className="flex-1 space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#6b7280] ml-1">Organization Name *</label>
                 <input
-                  id="signup-company"
                   name="company_name"
                   value={form.company_name}
                   onChange={handleChange}
-                  placeholder="Odoo India"
-                  className="input-field"
+                  placeholder="e.g. Odoo India"
+                  className="w-full bg-[#1f2937] border border-[#374151] text-white rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#10b981] focus:border-transparent transition-all duration-200 placeholder:text-[#4b5563] text-sm"
                 />
               </div>
-              <div className="shrink-0">
-                <label className="label">Logo</label>
-                <label
-                  className="flex items-center justify-center w-10 h-10 rounded-lg cursor-pointer overflow-hidden transition-all hover:ring-2 hover:ring-[var(--color-primary)]"
-                  style={{
-                    background: logoPreview ? 'transparent' : 'var(--bg-input)',
-                    border: '1px solid var(--border-color)',
-                  }}
-                >
+              <div className="shrink-0 space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#6b7280] ml-1">Brand Logo</label>
+                <label className="flex items-center justify-center w-[58px] h-[58px] rounded-xl cursor-pointer overflow-hidden bg-[#1f2937] border border-[#374151] hover:border-[#10b981] transition-all group">
                   {logoPreview ? (
                     <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
                   ) : (
-                    <Upload size={16} className="text-[var(--text-secondary)]" />
+                    <Upload size={20} className="text-[#6b7280] group-hover:text-emerald-400" />
                   )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoChange}
-                    className="hidden"
-                    id="signup-logo"
-                  />
+                  <input type="file" accept="image/*" onChange={handleLogoChange} className="hidden" />
                 </label>
               </div>
             </div>
 
-            {/* Name */}
-            <div>
-              <label className="label" htmlFor="signup-name">Full Name *</label>
-              <input
-                id="signup-name"
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                placeholder="John Doe"
-                className="input-field"
-              />
+            {/* Admin Info */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#6b7280] ml-1">Admin Name *</label>
+                <input
+                  name="name"
+                  value={form.name}
+                  onChange={handleChange}
+                  placeholder="John Doe"
+                  className="w-full bg-[#1f2937] border border-[#374151] text-white rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#10b981] focus:border-transparent transition-all duration-200 placeholder:text-[#4b5563] text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#6b7280] ml-1">Phone Number</label>
+                <input
+                  name="phone"
+                  value={form.phone}
+                  onChange={handleChange}
+                  placeholder="+91 98765..."
+                  className="w-full bg-[#1f2937] border border-[#374151] text-white rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#10b981] focus:border-transparent transition-all duration-200 placeholder:text-[#4b5563] text-sm"
+                />
+              </div>
             </div>
 
-            {/* Email */}
-            <div>
-              <label className="label" htmlFor="signup-email">Email *</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#6b7280] ml-1">Work Email Address *</label>
               <input
-                id="signup-email"
                 name="email"
                 type="email"
                 value={form.email}
                 onChange={handleChange}
-                placeholder="john@company.com"
-                className="input-field"
+                placeholder="admin@company.com"
+                className="w-full bg-[#1f2937] border border-[#374151] text-white rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#10b981] focus:border-transparent transition-all duration-200 placeholder:text-[#4b5563] text-sm"
               />
             </div>
 
-            {/* Phone */}
-            <div>
-              <label className="label" htmlFor="signup-phone">Phone</label>
-              <input
-                id="signup-phone"
-                name="phone"
-                type="tel"
-                value={form.phone}
-                onChange={handleChange}
-                placeholder="9876543210"
-                className="input-field"
-              />
-            </div>
-
-            {/* Password */}
-            <div>
-              <label className="label" htmlFor="signup-password">Password *</label>
-              <div className="relative">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#6b7280] ml-1">Password *</label>
+                <div className="relative">
+                  <input
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={form.password}
+                    onChange={handleChange}
+                    placeholder="Min 8 chars"
+                    className="w-full bg-[#1f2937] border border-[#374151] text-white rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#10b981] focus:border-transparent transition-all duration-200 placeholder:text-[#4b5563] text-sm pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4b5563] hover:text-white transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#6b7280] ml-1">Confirm *</label>
                 <input
-                  id="signup-password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={form.password}
+                  name="confirm_password"
+                  type="password"
+                  value={form.confirm_password}
                   onChange={handleChange}
-                  placeholder="Minimum 8 characters"
-                  className="input-field pr-10"
+                  placeholder="Re-enter"
+                  className="w-full bg-[#1f2937] border border-[#374151] text-white rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#10b981] focus:border-transparent transition-all duration-200 placeholder:text-[#4b5563] text-sm"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-white transition-colors"
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
               </div>
             </div>
 
-            {/* Confirm Password */}
-            <div>
-              <label className="label" htmlFor="signup-confirm">Confirm Password *</label>
-              <input
-                id="signup-confirm"
-                name="confirm_password"
-                type="password"
-                value={form.confirm_password}
-                onChange={handleChange}
-                placeholder="Re-enter password"
-                className="input-field"
-              />
-            </div>
-
-            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              className={`btn-primary w-full flex items-center justify-center gap-2 py-3 mt-2
-                ${loading ? 'opacity-50 cursor-not-allowed' : ''}
+              className={`w-full bg-[#10b981] hover:bg-[#059669] text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-200 flex items-center justify-center gap-3 transform active:scale-[0.98] mt-6
+                ${loading ? 'opacity-70 cursor-not-allowed grayscale' : ''}
               `}
               id="signup-submit-btn"
             >
-              <UserPlus size={18} />
-              {loading ? 'Creating account...' : 'Sign Up'}
+              {loading ? (
+                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <UserPlus size={22} />
+              )}
+              {loading ? 'Initializing...' : 'Create My Company'}
             </button>
           </form>
 
-          {/* Login link */}
-          <p className="text-center text-sm text-[var(--text-secondary)] mt-6">
-            Already have an account?{' '}
-            <Link
-              to="/login"
-              className="text-[var(--text-accent)] hover:text-white transition-colors font-medium"
-            >
-              Sign In
-            </Link>
+          <p className="mt-10 text-center text-[#6b7280] text-sm font-medium">
+            Already have an account? <Link to="/login" className="text-[#10b981] hover:underline font-bold">Sign In</Link>
           </p>
         </div>
       </div>

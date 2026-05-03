@@ -31,10 +31,15 @@ export default function CompanyDetails() {
     email: 'contact@empay.corp',
     phone: '+91 98765 43210',
     website: 'www.empay.corp',
-    address: 'Tech Park, Mumbai, India'
+    address: 'Tech Park, Mumbai, India',
+    logo_url: ''
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Derive Server URL for images
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const SERVER_URL = API_URL.replace('/api', '');
 
   useEffect(() => {
     settingsApi.getCompany().then(res => {
@@ -42,7 +47,8 @@ export default function CompanyDetails() {
         setForm(prev => ({ 
           ...prev,
           name: res.data.name || '', 
-          prefix: res.data.prefix || '' 
+          prefix: res.data.prefix || '',
+          logo_url: res.data.logo_url || ''
         }));
       }
       setLoading(false);
@@ -63,8 +69,16 @@ export default function CompanyDetails() {
     <div className="animate-fade-in space-y-8">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-            <Building2 size={24} className="text-emerald-500" />
+          <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center overflow-hidden">
+            {form.logo_url ? (
+              <img 
+                src={`${SERVER_URL}${form.logo_url}`} 
+                alt="Logo" 
+                className="w-full h-full object-cover" 
+              />
+            ) : (
+              <Building2 size={28} className="text-emerald-500" />
+            )}
           </div>
           <div>
             <h1 className="text-3xl font-black text-[var(--text-primary)]">Company Profile</h1>

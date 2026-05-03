@@ -133,7 +133,7 @@ export default function Navbar({ onMenuToggle }) {
               }}
             >
               <div className="px-4 py-3 border-b border-[var(--border-color)] flex justify-between items-center">
-                <h3 className="font-semibold text-white">Notifications</h3>
+                <h3 className="font-semibold text-[var(--text-primary)]">Notifications</h3>
                 {unreadCount > 0 && (
                   <span className="text-xs bg-[rgba(59,130,246,0.15)] text-[#3B82F6] px-2 py-0.5 rounded-full font-medium">
                     {unreadCount} new
@@ -155,7 +155,7 @@ export default function Navbar({ onMenuToggle }) {
                       }`}
                     >
                       <div className="flex justify-between items-start mb-1">
-                        <p className={`text-sm ${!notif.is_read ? 'font-semibold text-white' : 'font-medium text-[var(--text-primary)]'}`}>
+                        <p className={`text-sm ${!notif.is_read ? 'font-semibold text-[var(--text-primary)]' : 'font-medium text-[var(--text-primary)]'}`}>
                           {notif.title}
                         </p>
                         {!notif.is_read && <span className="w-2 h-2 rounded-full bg-blue-500 mt-1 shrink-0" />}
@@ -275,7 +275,7 @@ export default function Navbar({ onMenuToggle }) {
                     setShowDropdown(false);
                     navigate('/dashboard/profile');
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-card-hover)] transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] transition-colors"
                   id="navbar-myprofile-btn"
                 >
                   <User size={16} />

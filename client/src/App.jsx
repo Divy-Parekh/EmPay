@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import Login from './pages/Login';
@@ -33,7 +34,27 @@ function RoleRoute({ children, allowedRoles }) {
 }
 
 export default function App() {
-  const { user } = useAuth();
+  const { user, company } = useAuth();
+
+  // Dynamically update Tab Title and Favicon
+  useEffect(() => {
+    if (company?.name) {
+      document.title = `${company.name} | EmPay HRMS`;
+    } else {
+      document.title = 'EmPay | Smart HRMS';
+    }
+
+    if (company?.logo_url) {
+      const serverUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
+      let favicon = document.querySelector('link[rel="icon"]');
+      if (!favicon) {
+        favicon = document.createElement('link');
+        favicon.rel = 'icon';
+        document.getElementsByTagName('head')[0].appendChild(favicon);
+      }
+      favicon.href = `${serverUrl}${company.logo_url}`;
+    }
+  }, [company]);
 
   // Define the default tab based on user role
   const defaultTab = user?.role === 'employee' ? 'attendance' : 'employees';
