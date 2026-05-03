@@ -74,6 +74,18 @@ const AttendanceModel = {
          MAX(a.check_out) as check_out,
          SUM(a.work_hours) as work_hours,
          SUM(a.extra_hours) as extra_hours,
+         COUNT(a.id) as sessions_count,
+         COALESCE(
+           json_agg(
+             json_build_object(
+               'id', a.id,
+               'check_in', a.check_in,
+               'check_out', a.check_out,
+               'work_hours', a.work_hours
+             ) ORDER BY a.check_in ASC
+           ) FILTER (WHERE a.id IS NOT NULL),
+           '[]'
+         ) as sessions,
          CASE
            WHEN EXISTS (SELECT 1 FROM attendance a2 WHERE a2.employee_id = e.id AND a2.date = $2 AND a2.check_out IS NULL) THEN 'present'
            WHEN EXISTS (SELECT 1 FROM attendance a3 WHERE a3.employee_id = e.id AND a3.date = $2 AND a3.status = 'on_leave') THEN 'on_leave'

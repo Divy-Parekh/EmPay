@@ -167,13 +167,17 @@ async function chatWithGroq(systemPrompt, message, conversationHistory, context)
 
         console.log(`🤖 Chatbot tool call: ${name}`, JSON.stringify(args).substring(0, 200));
         const result = await executeTool(name, args, context);
-        actions.push({ tool: name, args, result: { success: result.success } });
+        actions.push({ tool: name, args, data: result.data, result: { success: result.success } });
+
+        const llmResult = name === 'run_read_query' 
+          ? { success: result.success, message: "Query executed successfully. Data rendered locally. Do not summarize it." }
+          : result;
 
         // Add the tool result back
         messages.push({
           role: 'tool',
           tool_call_id: toolCall.id,
-          content: JSON.stringify(result),
+          content: JSON.stringify(llmResult),
         });
       }
       // Continue loop — Groq will process the tool results
@@ -256,8 +260,13 @@ async function chatWithGemini(systemPrompt, message, conversationHistory, contex
       const { name, args } = part.functionCall;
       console.log(`🤖 Chatbot tool call: ${name}`, JSON.stringify(args).substring(0, 200));
       const result = await executeTool(name, args, context);
-      actions.push({ tool: name, args, result: { success: result.success } });
-      toolResponses.push({ functionResponse: { name, response: result } });
+      actions.push({ tool: name, args, data: result.data, result: { success: result.success } });
+      
+      const llmResult = name === 'run_read_query' 
+          ? { success: result.success, message: "Query executed successfully. Data rendered locally. Do not summarize it." }
+          : result;
+
+      toolResponses.push({ functionResponse: { name, response: llmResult } });
     }
 
     response = await sendWithRetry(toolResponses);

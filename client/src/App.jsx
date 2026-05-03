@@ -34,7 +34,7 @@ function RoleRoute({ children, allowedRoles }) {
 
 export default function App() {
   const { user } = useAuth();
-  
+
   // Define the default tab based on user role
   const defaultTab = user?.role === 'employee' ? 'attendance' : 'employees';
 
@@ -54,27 +54,27 @@ export default function App() {
         }
       >
         <Route index element={<Navigate to={defaultTab} replace />} />
-        
-        <Route 
-          path="employees" 
+
+        <Route
+          path="employees"
           element={
             <RoleRoute allowedRoles={['admin', 'hr_officer', 'payroll_officer']}>
               <Employees />
             </RoleRoute>
-          } 
+          }
         />
-        <Route 
-          path="employees/:id" 
+        <Route
+          path="employees/:id"
           element={
             <RoleRoute allowedRoles={['admin', 'hr_officer', 'payroll_officer', 'employee']}>
               <EmployeeDetail />
             </RoleRoute>
-          } 
+          }
         />
-        
+
         <Route path="attendance" element={<Attendance />} />
         <Route path="time-off" element={<TimeOff />} />
-        
+
         <Route
           path="payroll"
           element={

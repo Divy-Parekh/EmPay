@@ -36,13 +36,13 @@ const EmployeeModel = {
              e.bank_name, e.bank_acc_number,
              u.login_id, u.role,
              CASE
-               WHEN EXISTS (SELECT 1 FROM attendance a2 WHERE a2.employee_id = e.id AND a2.date = CURRENT_DATE AND a2.check_out IS NULL) THEN 'present'
-               WHEN EXISTS (SELECT 1 FROM attendance a3 WHERE a3.employee_id = e.id AND a3.date = CURRENT_DATE AND a3.status = 'on_leave') THEN 'on_leave'
-               WHEN EXISTS (SELECT 1 FROM attendance a4 WHERE a4.employee_id = e.id AND a4.date = CURRENT_DATE) THEN 'present'
+               WHEN EXISTS (SELECT 1 FROM attendance a2 WHERE a2.employee_id = e.id AND a2.date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date AND a2.check_out IS NULL) THEN 'present'
+               WHEN EXISTS (SELECT 1 FROM attendance a3 WHERE a3.employee_id = e.id AND a3.date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date AND a3.status = 'on_leave') THEN 'on_leave'
+               WHEN EXISTS (SELECT 1 FROM attendance a4 WHERE a4.employee_id = e.id AND a4.date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date) THEN 'present'
                ELSE 'absent'
              END as attendance_status,
-             (SELECT COALESCE(SUM(work_hours), 0) FROM attendance a5 WHERE a5.employee_id = e.id AND a5.date = CURRENT_DATE) as today_work_hours,
-             EXISTS (SELECT 1 FROM attendance a6 WHERE a6.employee_id = e.id AND a6.date = CURRENT_DATE AND a6.check_out IS NULL) as is_checked_in
+             (SELECT COALESCE(SUM(work_hours), 0) FROM attendance a5 WHERE a5.employee_id = e.id AND a5.date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date) as today_work_hours,
+             EXISTS (SELECT 1 FROM attendance a6 WHERE a6.employee_id = e.id AND a6.date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date AND a6.check_out IS NULL) as is_checked_in
       FROM employees e
       JOIN users u ON u.id = e.user_id
       WHERE e.company_id = $1 AND u.is_active = TRUE

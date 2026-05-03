@@ -45,11 +45,11 @@ export default function Notifications() {
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return (
-    <div className="flex-1 p-4 lg:p-8 overflow-y-auto w-full max-w-5xl mx-auto animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+    <div className="animate-fade-in space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white mb-1">Notifications</h1>
-          <p className="text-sm text-[var(--text-secondary)]">
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Notifications</h1>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">
             You have {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
           </p>
         </div>
@@ -57,9 +57,9 @@ export default function Notifications() {
         {unreadCount > 0 && (
           <button
             onClick={handleMarkAllAsRead}
-            className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-card-hover)] hover:bg-[var(--border-color)] text-white rounded-lg transition-colors text-sm font-medium border border-[var(--border-color)]"
+            className="flex items-center gap-2 px-4 py-2 bg-[rgba(59,130,246,0.1)] hover:bg-[rgba(59,130,246,0.2)] text-[#3B82F6] rounded-lg transition-all text-sm font-bold border border-[#3B82F6]/30 shadow-sm"
           >
-            <Check size={16} className="text-[#34D399]" />
+            <Check size={16} />
             Mark all as read
           </button>
         )}
@@ -70,7 +70,7 @@ export default function Notifications() {
           <div className="w-16 h-16 rounded-full bg-[var(--bg-card-hover)] flex items-center justify-center mb-4">
             <Bell size={24} className="text-[var(--text-secondary)]" />
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">No notifications yet</h3>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">No notifications yet</h3>
           <p className="text-sm text-[var(--text-secondary)] max-w-sm">
             When you receive notifications about your account or activity, they will appear here.
           </p>
@@ -102,7 +102,7 @@ export default function Notifications() {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4 mb-1">
-                    <h4 className={`text-base truncate ${!notif.is_read ? 'font-semibold text-white' : 'font-medium text-[var(--text-primary)]'}`}>
+                    <h4 className={`text-base truncate ${!notif.is_read ? 'font-semibold text-[var(--text-primary)]' : 'font-medium text-[var(--text-primary)]'}`}>
                       {notif.title}
                     </h4>
                     <span className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] shrink-0">

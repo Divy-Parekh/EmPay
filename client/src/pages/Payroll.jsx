@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { payrollApi } from '../api/payroll.api';
 import { fetchPayrollDashboard, fetchPayruns, validatePayrun, cancelPayrun } from '../store/slices/payrollSlice';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
+import CustomSelect from '../components/common/CustomSelect';
 import PayslipDetail from '../components/payroll/PayslipDetail';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
-import { AlertTriangle, Play, CheckCircle, XCircle } from 'lucide-react';
+import { AlertTriangle, Play, CheckCircle, XCircle, TrendingUp, DollarSign } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { statsApi } from '../api/stats.api';
 
 export default function Payroll() {
   const dispatch = useDispatch();
@@ -19,6 +21,13 @@ export default function Payroll() {
   const [costView, setCostView] = useState('monthly');
   const [countView, setCountView] = useState('monthly');
 
+  const monthOptions = useMemo(() => [...Array(12)].map((_, i) => ({
+    value: i + 1,
+    label: new Date(0, i).toLocaleString('en', { month: 'long' })
+  })), []);
+
+  const yearOptions = [2024, 2025, 2026].map(y => ({ value: y, label: y.toString() }));
+
   /* Payrun creation */
   const [creating, setCreating] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -28,13 +37,28 @@ export default function Payroll() {
   });
   const [expandedPayrun, setExpandedPayrun] = useState(null);
 
+  const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
   useEffect(() => {
     if (subTab === 'Dashboard') {
       dispatch(fetchPayrollDashboard());
+      loadStats();
     } else {
       dispatch(fetchPayruns());
     }
   }, [dispatch, subTab]);
+
+  const loadStats = async () => {
+    try {
+      const res = await statsApi.getPayrollStats();
+      if (res.success) setStats(res.data);
+    } catch (err) {
+      console.error('Failed to load payroll stats:', err);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
 
   const handleCreatePayrun = async (e) => {
     e.preventDefault();
@@ -169,114 +193,60 @@ export default function Payroll() {
               </div>
             </div>
 
-            {/* Main Trend Analysis */}
-            <div className="card p-6">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h3 className="text-lg font-black text-[var(--text-primary)]">Fiscal Performance Intelligence</h3>
-                  <p className="text-xs text-[var(--text-secondary)] font-medium mt-1">Year-over-year payroll distribution and net disbursement</p>
+              {/* Main Trend Analysis */}
+              <div className="card p-6">
+                <div className="flex items-center gap-2 mb-8">
+                  <TrendingUp size={18} className="text-emerald-500" />
+                  <h3 className="text-lg font-black text-[var(--text-primary)]">Total Payroll Expenditure</h3>
                 </div>
-                <div className="flex bg-[var(--bg-input)] p-1 rounded-xl border border-[var(--border-color)]">
-                  {['monthly', 'yearly'].map(v => (
-                    <button 
-                      key={v} 
-                      onClick={() => setCostView(v)} 
-                      className={`text-[10px] uppercase font-black px-4 py-1.5 rounded-lg transition-all
-                        ${costView === v ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}
-                      `}
-                    >
-                      {v}
-                    </button>
-                  ))}
+                
+                <div className="h-[350px]">
+                  {!statsLoading && stats ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={stats.payrollTrend}>
+                        <defs>
+                          <linearGradient id="colorAmt" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'var(--text-muted)', fontSize: 10}} dy={10} />
+                        <YAxis axisLine={false} tickLine={false} tick={{fill: 'var(--text-muted)', fontSize: 10}} />
+                        <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px' }} />
+                        <Area type="monotone" dataKey="amount" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorAmt)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-[var(--text-secondary)]">Loading trends...</div>
+                  )}
                 </div>
               </div>
-              
-              <ResponsiveContainer width="100%" height={350}>
-                <AreaChart data={dashboard.employer_cost?.[costView] || []}>
-                  <defs>
-                    <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorGross" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
-                  <XAxis 
-                    dataKey="month" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{fill: 'var(--text-muted)', fontSize: 10, fontWeight: 700}}
-                    dy={10}
-                  />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{fill: 'var(--text-muted)', fontSize: 10, fontWeight: 700}}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      background: 'var(--bg-card)', 
-                      border: '1px solid var(--border-color)', 
-                      borderRadius: '12px',
-                      boxShadow: 'var(--shadow-modal)',
-                      color: 'var(--text-primary)'
-                    }}
-                    itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-                  />
-                  <Legend iconType="circle" />
-                  <Area 
-                    name="Net Disbursement"
-                    type="monotone" 
-                    dataKey="net_pay" 
-                    stroke="#10b981" 
-                    strokeWidth={3}
-                    fillOpacity={1} 
-                    fill="url(#colorNet)" 
-                  />
-                  <Area 
-                    name="Gross Expenditure"
-                    type="monotone" 
-                    dataKey="total_cost" 
-                    stroke="#3b82f6" 
-                    strokeWidth={3}
-                    fillOpacity={1} 
-                    fill="url(#colorGross)" 
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
 
-            {/* Secondary Charts Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="card p-5">
-                <h3 className="text-sm font-black text-[var(--text-primary)] uppercase tracking-wider mb-6">Staffing Growth</h3>
-                <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={dashboard.employee_count?.[countView] || []}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
-                    <XAxis dataKey="month" tick={{fill: 'var(--text-muted)', fontSize: 10}} axisLine={false} tickLine={false} />
-                    <YAxis tick={{fill: 'var(--text-muted)', fontSize: 10}} axisLine={false} tickLine={false} />
-                    <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-primary)' }} />
-                    <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]} barSize={30} />
-                  </BarChart>
-                </ResponsiveContainer>
+              {/* Secondary Analytics Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
+                <div className="card p-6">
+                  <div className="flex items-center gap-2 mb-8">
+                    <DollarSign size={18} className="text-blue-500" />
+                    <h3 className="text-sm font-black text-[var(--text-primary)] uppercase tracking-wider">Departmental Cost Breakdown</h3>
+                  </div>
+                  <div className="h-[250px]">
+                    {!statsLoading && stats ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={stats.departmentCost}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
+                          <XAxis dataKey="name" tick={{fill: 'var(--text-muted)', fontSize: 10}} axisLine={false} tickLine={false} />
+                          <YAxis tick={{fill: 'var(--text-muted)', fontSize: 10}} axisLine={false} tickLine={false} />
+                          <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px' }} />
+                          <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={40} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-[var(--text-secondary)]">Loading breakdown...</div>
+                    )}
+                  </div>
+                </div>
               </div>
-              
-              <div className="card p-5">
-                <h3 className="text-sm font-black text-[var(--text-primary)] uppercase tracking-wider mb-6">Deduction Distribution</h3>
-                <ResponsiveContainer width="100%" height={220}>
-                  <AreaChart data={dashboard.employer_cost?.[costView] || []}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
-                    <XAxis dataKey="month" tick={{fill: 'var(--text-muted)', fontSize: 10}} axisLine={false} tickLine={false} />
-                    <YAxis tick={{fill: 'var(--text-muted)', fontSize: 10}} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-primary)' }} />
-                    <Area type="monotone" dataKey="deductions" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.1} strokeWidth={2} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
           </div>
         )
       ) : (
@@ -369,32 +339,18 @@ export default function Payroll() {
           <p className="text-sm text-[var(--text-secondary)]">Select the month and year you want to generate payslips for.</p>
           
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="label">Month</label>
-              <select 
-                className="select-field"
-                value={payrunDate.month}
-                onChange={e => setPayrunDate({ ...payrunDate, month: parseInt(e.target.value) })}
-              >
-                {[...Array(12)].map((_, i) => (
-                  <option key={i+1} value={i+1}>
-                    {new Date(0, i).toLocaleString('en', { month: 'long' })}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="label">Year</label>
-              <select 
-                className="select-field"
-                value={payrunDate.year}
-                onChange={e => setPayrunDate({ ...payrunDate, year: parseInt(e.target.value) })}
-              >
-                {[2024, 2025, 2026].map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-            </div>
+            <CustomSelect 
+              label="Month"
+              options={monthOptions}
+              value={payrunDate.month}
+              onChange={val => setPayrunDate({ ...payrunDate, month: val })}
+            />
+            <CustomSelect 
+              label="Year"
+              options={yearOptions}
+              value={payrunDate.year}
+              onChange={val => setPayrunDate({ ...payrunDate, year: val })}
+            />
           </div>
 
           <div className="flex justify-end gap-3 pt-4">

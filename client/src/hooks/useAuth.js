@@ -19,7 +19,7 @@ export function useAuth() {
     logout: () => dispatch(logoutAction()),
     updateEmployee: (data) => dispatch(updateEmployeeProfile(data)),
     toggleCheckIn: async () => {
-      return await dispatch(toggleCheckIn()).unwrap();
+      return await dispatch(toggleCheckIn(authState.is_checked_in)).unwrap();
     },
     fetchCheckInStatus: () => dispatch(fetchCheckInStatus()),
   };

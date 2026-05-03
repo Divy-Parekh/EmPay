@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useAuth } from '../hooks/useAuth';
 import { timeoffApi } from '../api/timeoff.api';
@@ -8,8 +8,14 @@ import { canApproveTimeOff } from '../utils/roles';
 import { formatDate } from '../utils/formatters';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
-import { Plus, Check, X, Upload, Coins } from 'lucide-react';
+import CustomSelect from '../components/common/CustomSelect';
+import CustomDatePicker from '../components/common/CustomDatePicker';
+import { Plus, Check, X, Upload, Coins, PieChart as PieChartIcon, ClipboardCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { 
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend
+} from 'recharts';
+import { statsApi } from '../api/stats.api';
 
 export default function TimeOff() {
   const { user, employee } = useAuth();
@@ -20,6 +26,16 @@ export default function TimeOff() {
   const { requests, balances, allBalances, types, loading } = useSelector((state) => state.timeOff);
   const { list: employees } = useSelector((state) => state.employees);
   
+  const typeOptions = useMemo(() => types.map(t => ({ value: t.id, label: t.name })), [types]);
+  const employeeOptions = useMemo(() => employees.map(e => ({ 
+    value: e.id, 
+    label: `${e.first_name} ${e.last_name} (${e.job_position || (e.role === 'admin' ? 'Admin' : 'Employee')})`
+  })), [employees]);
+  const rowFilterOptions = useMemo(() => [
+    { value: 'all', label: 'Combined Total' },
+    ...typeOptions
+  ], [typeOptions]);
+
   const [activeSubTab, setActiveSubTab] = useState('Time Off');
   const [showNewModal, setShowNewModal] = useState(false);
   const [showAllocModal, setShowAllocModal] = useState(false);
@@ -32,12 +48,33 @@ export default function TimeOff() {
   /* Allocation form */
   const [allocForm, setAllocForm] = useState({ employee_id: '', time_off_type_id: '', days: 0 });
 
-  /* Allocation Filter */
-  const [typeFilter, setTypeFilter] = useState('all');
+  /* State to track per-employee filter selection */
+  const [rowFilters, setRowFilters] = useState({}); // { employeeId: typeId | 'all' }
+
+  const handleRowFilterChange = (empId, typeId) => {
+    setRowFilters(prev => ({ ...prev, [empId]: typeId }));
+  };
+
+  const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => { 
     dispatch(fetchTimeOffData()); 
-  }, [dispatch]);
+    if (isApprover) loadStats();
+  }, [dispatch, isApprover]);
+
+  const loadStats = async () => {
+    try {
+      const res = await statsApi.getTimeOffStats();
+      if (res.success) setStats(res.data);
+    } catch (err) {
+      console.error('Failed to load time off stats:', err);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
   // Fetch employees if they are an approver (for the dropdown)
   useEffect(() => {
@@ -132,13 +169,6 @@ export default function TimeOff() {
     return acc;
   }, {});
 
-  // State to track per-employee filter selection
-  const [rowFilters, setRowFilters] = useState({}); // { employeeId: typeId | 'all' }
-
-  const handleRowFilterChange = (empId, typeId) => {
-    setRowFilters(prev => ({ ...prev, [empId]: typeId }));
-  };
-
   const employeeIds = Object.keys(groupedBalances).sort((a, b) => 
     groupedBalances[a].name.localeCompare(groupedBalances[b].name)
   );
@@ -175,6 +205,71 @@ export default function TimeOff() {
           </div>
         ))}
       </div>
+
+      {/* Approver Analytics Section */}
+      {isApprover && !statsLoading && stats && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
+          {/* Leave Types Distribution */}
+          <div className="card p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <PieChartIcon size={18} className="text-blue-500" />
+              <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-secondary)]">Leave Type Breakdown</h2>
+            </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={stats.leaveTypeDistribution}
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {stats.leaveTypeDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip 
+                    contentStyle={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)' }}
+                    itemStyle={{ color: 'var(--text-primary)' }}
+                  />
+                  <Legend verticalAlign="bottom" height={36}/>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Approval Status */}
+          <div className="card p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <ClipboardCheck size={18} className="text-emerald-500" />
+              <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-secondary)]">Request Status</h2>
+            </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={stats.approvalStatusDistribution}
+                    innerRadius={0}
+                    outerRadius={80}
+                    dataKey="value"
+                  >
+                    {stats.approvalStatusDistribution.map((entry, index) => {
+                      const color = entry.name === 'approved' ? '#10B981' : (entry.name === 'pending' ? '#F59E0B' : '#EF4444');
+                      return <Cell key={`cell-${index}`} fill={color} />;
+                    })}
+                  </Pie>
+                  <RechartsTooltip 
+                    contentStyle={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)' }}
+                    itemStyle={{ color: 'var(--text-primary)' }}
+                  />
+                  <Legend verticalAlign="bottom" height={36}/>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <div className="card">
@@ -246,16 +341,12 @@ export default function TimeOff() {
                       <tr key={empId}>
                         <td className="font-medium">{empData.name}</td>
                         <td>
-                          <select 
+                          <CustomSelect 
+                            options={rowFilterOptions}
                             value={selectedFilter}
-                            onChange={(e) => handleRowFilterChange(empId, e.target.value)}
-                            className="select-field text-xs py-1 h-auto min-w-[120px]"
-                          >
-                            <option value="all">Combined Total</option>
-                            {types.map(t => (
-                              <option key={t.id} value={t.id}>{t.name}</option>
-                            ))}
-                          </select>
+                            onChange={(val) => handleRowFilterChange(empId, val)}
+                            className="min-w-[150px]"
+                          />
                         </td>
                         <td className="font-semibold">{displayData.total_allocated || displayData.allocated}</td>
                         <td className="text-[var(--text-secondary)]">{displayData.used}</td>
@@ -278,12 +369,13 @@ export default function TimeOff() {
       <Modal isOpen={showNewModal} onClose={() => setShowNewModal(false)} title="New Time Off Request">
         <form onSubmit={handleCreateRequest} className="space-y-4">
           <div><label className="label">Employee</label><input value={`${employee?.first_name || ''} ${employee?.last_name || ''}`} disabled className="input-field opacity-60" /></div>
-          <div><label className="label">Time Off Type *</label>
-            <select value={reqForm.time_off_type_id} onChange={e => setReqForm({...reqForm, time_off_type_id: e.target.value})} className="select-field">
-              <option value="">Select type...</option>
-              {types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-          </div>
+          <CustomSelect 
+            label="Time Off Type *"
+            options={typeOptions}
+            value={reqForm.time_off_type_id}
+            onChange={val => setReqForm({...reqForm, time_off_type_id: val})}
+            placeholder="Select type..."
+          />
           <div className="grid grid-cols-2 gap-3">
             <div><label className="label">Start Date *</label><input type="date" value={reqForm.start_date} onChange={e => setReqForm({...reqForm, start_date: e.target.value})} className="input-field" /></div>
             <div><label className="label">End Date *</label><input type="date" value={reqForm.end_date} onChange={e => setReqForm({...reqForm, end_date: e.target.value})} className="input-field" /></div>
@@ -317,27 +409,18 @@ export default function TimeOff() {
         title="Allocate Leaves"
       >
         <form onSubmit={handleAllocate} className="space-y-4">
-          <div>
-            <label className="label">Select Employee *</label>
-            <select 
-              value={allocForm.employee_id} 
-              onChange={e => setAllocForm({...allocForm, employee_id: e.target.value})} 
-              className="select-field"
-            >
-              <option value="">Select employee...</option>
-              {employees.map(emp => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.first_name} {emp.last_name} ({emp.job_position || (emp.role === 'admin' ? 'Admin' : 'Employee')})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div><label className="label">Leave Type *</label>
-            <select value={allocForm.time_off_type_id} onChange={e => setAllocForm({...allocForm, time_off_type_id: e.target.value})} className="select-field">
-              <option value="">Select type...</option>
-              {types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-          </div>
+          <CustomSelect 
+            label="Select Employee *"
+            options={employeeOptions}
+            value={allocForm.employee_id}
+            onChange={val => setAllocForm({...allocForm, employee_id: val})}
+          />
+          <CustomSelect 
+            label="Leave Type *"
+            options={typeOptions}
+            value={allocForm.time_off_type_id}
+            onChange={val => setAllocForm({...allocForm, time_off_type_id: val})}
+          />
           <div><label className="label">Days to Allocate</label><input type="number" value={allocForm.days} onChange={e => setAllocForm({...allocForm, days: Number(e.target.value)})} className="input-field" /></div>
           <div className="flex justify-end gap-3 pt-2">
             <button 

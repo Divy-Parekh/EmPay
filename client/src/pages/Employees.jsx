@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { useAuth } from '../hooks/useAuth';
@@ -7,8 +7,14 @@ import { canEditEmployee } from '../utils/roles';
 import { getInitials } from '../utils/formatters';
 import SearchBar from '../components/common/SearchBar';
 import Modal from '../components/common/Modal';
-import { UserPlus, Plane } from 'lucide-react';
+import CustomSelect from '../components/common/CustomSelect';
+import { UserPlus, Plane, PieChart as PieChartIcon, TrendingUp } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { 
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Legend
+} from 'recharts';
+import { statsApi } from '../api/stats.api';
 
 export default function Employees() {
   const { user } = useAuth();
@@ -18,6 +24,13 @@ export default function Employees() {
   const { list: employees, loading } = useSelector((state) => state.employees);
   const [search, setSearch] = useState('');
   const [showNewModal, setShowNewModal] = useState(false);
+
+  const roleOptions = [
+    { value: 'employee', label: 'Employee' },
+    { value: 'hr_officer', label: 'HR Officer' },
+    { value: 'payroll_officer', label: 'Payroll Officer' },
+    { value: 'admin', label: 'Admin' }
+  ];
 
   /* New employee form */
   const [newEmp, setNewEmp] = useState({ 
@@ -29,9 +42,26 @@ export default function Employees() {
   });
   const [creating, setCreating] = useState(false);
 
+  const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
   useEffect(() => {
     dispatch(fetchEmployees());
+    loadStats();
   }, [dispatch]);
+
+  const loadStats = async () => {
+    try {
+      const res = await statsApi.getEmployeeStats();
+      if (res.success) setStats(res.data);
+    } catch (err) {
+      console.error('Failed to load employee stats:', err);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
   const filteredEmployees = employees.filter((emp) => {
     const q = search.toLowerCase();
@@ -126,6 +156,81 @@ export default function Employees() {
           )}
         </div>
       </div>
+
+      {/* Analytics Section */}
+      {!statsLoading && stats && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 animate-fade-in">
+          {/* Dept Distribution */}
+          <div className="card p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <PieChartIcon size={18} className="text-emerald-500" />
+              <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-secondary)]">Department Distribution</h2>
+            </div>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart margin={{ top: 0, right: 100, bottom: 0, left: 100 }}>
+                  <Pie
+                    data={stats.departmentDistribution}
+                    innerRadius={40}
+                    outerRadius={60}
+                    paddingAngle={5}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={true}
+                  >
+                    {stats.departmentDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip 
+                    contentStyle={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)' }}
+                    itemStyle={{ color: 'var(--text-primary)' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Growth Trend */}
+          <div className="card p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <TrendingUp size={18} className="text-blue-500" />
+              <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-secondary)]">Headcount Growth</h2>
+            </div>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={stats.headcountGrowth}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
+                    dy={10}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
+                  />
+                  <RechartsTooltip 
+                    contentStyle={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)' }}
+                    itemStyle={{ color: 'var(--text-primary)' }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="count" 
+                    stroke="#3B82F6" 
+                    strokeWidth={3} 
+                    dot={{ r: 4, fill: '#3B82F6', strokeWidth: 2, stroke: '#fff' }}
+                    activeDot={{ r: 6, strokeWidth: 0 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Loading state */}
       {loading ? (
@@ -253,18 +358,12 @@ export default function Employees() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label" htmlFor="new-emp-role">Role *</label>
-              <select
-                id="new-emp-role"
+              <CustomSelect 
+                label="Role *"
+                options={roleOptions}
                 value={newEmp.role}
-                onChange={(e) => setNewEmp({ ...newEmp, role: e.target.value })}
-                className="select-field"
-              >
-                <option value="employee">Employee</option>
-                <option value="hr_officer">HR Officer</option>
-                <option value="payroll_officer">Payroll Officer</option>
-                <option value="admin">Admin</option>
-              </select>
+                onChange={val => setNewEmp({ ...newEmp, role: val })}
+              />
             </div>
             <div>
               <label className="label" htmlFor="new-emp-position">Job Position</label>

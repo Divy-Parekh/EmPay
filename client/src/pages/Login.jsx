@@ -167,7 +167,7 @@ export default function Login() {
             <div className="grid grid-cols-2 gap-3">
               {[
                 { role: 'Admin', email: 'admin@odoo.com', color: '#10b981' },
-                { role: 'HR', email: 'ananya.design@odoo.com', color: '#3b82f6' },
+                { role: 'HR', email: 'ananya.hr@odoo.com', color: '#3b82f6' },
                 { role: 'Payroll', email: 'rohan.payroll@odoo.com', color: '#f59e0b' },
                 { role: 'Employee', email: 'priya.dev@odoo.com', color: '#ef4444' }
               ].map(q => (

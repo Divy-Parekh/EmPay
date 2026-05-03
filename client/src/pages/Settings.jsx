@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { settingsApi } from '../api/settings.api';
 import { ROLE_LABELS } from '../utils/roles';
 import { Shield } from 'lucide-react';
+import CustomSelect from '../components/common/CustomSelect';
 import toast from 'react-hot-toast';
 
 export default function Settings() {
@@ -33,6 +34,11 @@ export default function Settings() {
     else toast.error(res.error?.message || 'Failed to update manager');
   };
 
+  const roleOptions = useMemo(() => Object.entries(ROLE_LABELS).map(([val, label]) => ({
+    value: val,
+    label: label
+  })), []);
+
   return (
     <div className="animate-fade-in space-y-6">
       <div className="flex items-center gap-3">
@@ -51,40 +57,40 @@ export default function Settings() {
                 <tr><td colSpan={4} className="text-center py-8 text-[var(--text-secondary)]">Loading...</td></tr>
               ) : users.length === 0 ? (
                 <tr><td colSpan={4} className="text-center py-8 text-[var(--text-secondary)]">No users found</td></tr>
-              ) : users.map(u => (
-                <tr key={u.id}>
-                  <td className="font-medium">{u.first_name ? `${u.first_name} ${u.last_name}` : u.login_id}</td>
-                  <td className="text-[var(--text-secondary)]">{u.login_id}</td>
-                  <td>
-                    <select
-                      value={u.role}
-                      onChange={e => handleRoleChange(u.id, e.target.value)}
-                      className="select-field w-auto text-sm"
-                    >
-                      {Object.entries(ROLE_LABELS).map(([val, label]) => (
-                        <option key={val} value={val}>{label}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>
-                    <select
-                      value={u.manager_id || 'none'}
-                      onChange={e => handleManagerChange(u.id, u.employee_id, e.target.value)}
-                      className="select-field w-auto text-sm"
-                      disabled={!u.employee_id}
-                    >
-                      <option value="none">No Manager</option>
-                      {users
-                        .filter(m => m.employee_id && m.employee_id !== u.employee_id)
-                        .map(m => (
-                          <option key={m.employee_id} value={m.employee_id}>
-                            {m.first_name} {m.last_name}
-                          </option>
-                        ))}
-                    </select>
-                  </td>
-                </tr>
-              ))}
+              ) : users.map(u => {
+                const managerOptions = [
+                  { value: 'none', label: 'No Manager' },
+                  ...users
+                    .filter(m => m.employee_id && m.employee_id !== u.employee_id)
+                    .map(m => ({
+                      value: m.employee_id,
+                      label: `${m.first_name} ${m.last_name}`
+                    }))
+                ];
+
+                return (
+                  <tr key={u.id}>
+                    <td className="font-medium">{u.first_name ? `${u.first_name} ${u.last_name}` : u.login_id}</td>
+                    <td className="text-[var(--text-secondary)]">{u.login_id}</td>
+                    <td className="min-w-[160px]">
+                      <CustomSelect
+                        value={u.role}
+                        options={roleOptions}
+                        onChange={val => handleRoleChange(u.id, val)}
+                        className="text-xs"
+                      />
+                    </td>
+                    <td className="min-w-[200px]">
+                      <CustomSelect
+                        value={u.manager_id || 'none'}
+                        options={managerOptions}
+                        onChange={val => handleManagerChange(u.id, u.employee_id, val)}
+                        className="text-xs"
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -92,3 +98,4 @@ export default function Settings() {
     </div>
   );
 }
+

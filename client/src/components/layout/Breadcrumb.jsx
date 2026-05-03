@@ -74,7 +74,7 @@ export default function Breadcrumb() {
             ) : (
               <Link
                 to={crumb.path}
-                className="text-[#9ca3af] hover:text-[#3b82f6] hover:bg-[#1f2937]/50 px-2 py-1 rounded-md text-sm font-bold transition-all duration-200"
+                className="text-[var(--text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--bg-card-hover)] px-2 py-1 rounded-md text-sm font-bold transition-all duration-200"
               >
                 {crumb.label}
               </Link>

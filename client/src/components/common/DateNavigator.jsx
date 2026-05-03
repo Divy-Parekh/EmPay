@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getDayName } from '../../utils/formatters';
+import CustomDatePicker from './CustomDatePicker';
 
 export default function DateNavigator({ date, onDateChange, showDay = true }) {
   const handlePrev = () => {
@@ -25,15 +26,12 @@ export default function DateNavigator({ date, onDateChange, showDay = true }) {
       </button>
 
       <div className="flex items-center gap-2">
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => onDateChange(e.target.value)}
-          className="input-field text-sm w-auto"
-          id="date-nav-picker"
+        <CustomDatePicker 
+          value={date} 
+          onChange={onDateChange} 
         />
         {showDay && (
-          <span className="text-sm text-[var(--text-secondary)] hidden sm:inline">
+          <span className="text-sm text-[var(--text-secondary)] hidden sm:inline ml-2">
             {getDayName(date)}
           </span>
         )}

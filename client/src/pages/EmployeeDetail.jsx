@@ -59,7 +59,11 @@ export default function EmployeeDetail() {
   return (
     <div className="animate-fade-in space-y-6">
       {canAccess(user?.role, 'employees') && (
-        <button onClick={() => navigate('/dashboard/employees')} className="flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors mb-4" id="emp-detail-back">
+        <button 
+          onClick={() => navigate('/dashboard/employees')} 
+          className="flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-black hover:font-black transition-all mb-4" 
+          id="emp-detail-back"
+        >
           <ArrowLeft size={16} /> Back to Employees
         </button>
       )}
@@ -107,7 +111,7 @@ export default function EmployeeDetail() {
       </div>
 
       {/* Tab content */}
-      <div className="animate-fade-in">
+      <div className="mt-6">
         {activeTab === 'Resume' && <ResumeTab employee={employee} canEdit={canEdit} onUpdate={fetchEmployee} />}
         {activeTab === 'Private Info' && <PrivateInfoTab employee={employee} canEdit={canEdit} onUpdate={fetchEmployee} />}
         {activeTab === 'Salary Info' && showSalary && <SalaryInfoTab employeeId={employee.id} canEdit={canAccess(user?.role, 'salary_info')} />}

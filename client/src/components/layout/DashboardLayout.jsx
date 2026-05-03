@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { useAuth } from '../../hooks/useAuth';
+import ChatbotModal from '../chatbot/ChatbotModal';
 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -42,6 +43,8 @@ export default function DashboardLayout() {
           <Outlet />
         </main>
       </div>
+
+      <ChatbotModal />
     </div>
   );
 }
