@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { settingsApi } from '../api/settings.api';
 import { ROLE_LABELS } from '../utils/roles';
-import { Shield } from 'lucide-react';
 import CustomSelect from '../components/common/CustomSelect';
 import toast from 'react-hot-toast';
 
@@ -42,7 +41,6 @@ export default function Settings() {
   return (
     <div className="animate-fade-in space-y-6">
       <div className="flex items-center gap-3">
-        <Shield size={24} className="text-[var(--color-primary)]" />
         <h1 className="text-2xl font-bold">User Settings</h1>
       </div>
 

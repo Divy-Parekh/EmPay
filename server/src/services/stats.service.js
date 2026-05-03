@@ -32,13 +32,20 @@ const StatsService = {
   },
 
   async getAttendanceStats(companyId) {
+    // Get total active employees for this company
+    const headCountRes = await query(
+      'SELECT COUNT(*) as count FROM employees WHERE company_id = $1',
+      [companyId]
+    );
+    const totalEmployees = parseInt(headCountRes.rows[0].count);
+
     // 1. Daily Status for last 7 days
     const statusResult = await query(
       `SELECT 
+         date,
          TO_CHAR(date, 'DD Mon') as name,
-         COUNT(*) FILTER (WHERE status = 'present' OR (check_in IS NOT NULL)) as present,
-         COUNT(*) FILTER (WHERE status = 'absent') as absent,
-         COUNT(*) FILTER (WHERE status = 'on_leave') as on_leave
+         COUNT(DISTINCT employee_id) FILTER (WHERE status = 'present' OR (check_in IS NOT NULL)) as present,
+         COUNT(DISTINCT employee_id) FILTER (WHERE status = 'on_leave') as on_leave
        FROM attendance a
        JOIN employees e ON e.id = a.employee_id
        WHERE e.company_id = $1 AND a.date > CURRENT_DATE - INTERVAL '7 days'
@@ -50,6 +57,7 @@ const StatsService = {
     // 2. Average Work Hours last 7 days
     const hoursResult = await query(
       `SELECT 
+         date,
          TO_CHAR(date, 'DD Mon') as name,
          AVG(work_hours) as hours
        FROM attendance a
@@ -61,12 +69,20 @@ const StatsService = {
     );
 
     return {
-      attendanceTrends: statusResult.rows.map(r => ({
-        name: r.name,
-        present: parseInt(r.present),
-        absent: parseInt(r.absent),
-        on_leave: parseInt(r.on_leave)
-      })),
+      attendanceTrends: statusResult.rows.map(r => {
+        const present = parseInt(r.present);
+        const onLeave = parseInt(r.on_leave);
+        // Absentees = Total - Present - OnLeave
+        // We use Math.max(0, ...) to prevent negative numbers if data is slightly inconsistent
+        const absent = Math.max(0, totalEmployees - present - onLeave);
+        
+        return {
+          name: r.name,
+          present: present,
+          absent: absent,
+          on_leave: onLeave
+        };
+      }),
       workHoursTrend: hoursResult.rows.map(r => ({
         name: r.name,
         hours: parseFloat(parseFloat(r.hours).toFixed(1))

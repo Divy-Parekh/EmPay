@@ -13,15 +13,9 @@ import {
   Phone
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { statsApi } from '../api/stats.api';
 import toast from 'react-hot-toast';
 
-// Mock growth data for the visual dashboard
-const GROWTH_DATA = [
-  { year: '2022', employees: 12, revenue: 1.2 },
-  { year: '2023', employees: 45, revenue: 2.8 },
-  { year: '2024', employees: 89, revenue: 5.4 },
-  { year: '2025', employees: 142, revenue: 9.1 },
-];
 
 export default function CompanyDetails() {
   const { company: authCompany } = useAuth();
@@ -36,21 +30,37 @@ export default function CompanyDetails() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [stats, setStats] = useState(null);
 
   // Derive Server URL for images
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
   const SERVER_URL = API_URL.replace('/api', '');
 
   useEffect(() => {
-    settingsApi.getCompany().then(res => {
-      if (res.success && res.data) {
+    Promise.all([
+      settingsApi.getCompany(),
+      statsApi.getEmployeeStats()
+    ]).then(([companyRes, statsRes]) => {
+      if (companyRes.success && companyRes.data) {
         setForm(prev => ({ 
           ...prev,
-          name: res.data.name || '', 
-          prefix: res.data.prefix || '',
-          logo_url: res.data.logo_url || ''
+          name: companyRes.data.name || '', 
+          prefix: companyRes.data.prefix || '',
+          logo_url: companyRes.data.logo_url || ''
         }));
       }
+      if (statsRes.success) {
+        // Calculate cumulative headcount growth
+        let runningTotal = 0;
+        const cumulativeGrowth = statsRes.data.headcountGrowth.map(item => {
+          runningTotal += item.count;
+          return { ...item, count: runningTotal };
+        });
+        setStats({ ...statsRes.data, headcountGrowth: cumulativeGrowth });
+      }
+      setLoading(false);
+    }).catch(err => {
+      console.error('Failed to load company data:', err);
       setLoading(false);
     });
   }, []);
@@ -200,7 +210,7 @@ export default function CompanyDetails() {
 
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={GROWTH_DATA}>
+                <AreaChart data={stats?.headcountGrowth || []}>
                   <defs>
                     <linearGradient id="growthGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
@@ -209,7 +219,7 @@ export default function CompanyDetails() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
                   <XAxis 
-                    dataKey="year" 
+                    dataKey="name" 
                     axisLine={false} 
                     tickLine={false} 
                     tick={{fill: 'var(--text-muted)', fontSize: 10, fontWeight: 700}}
@@ -232,7 +242,7 @@ export default function CompanyDetails() {
                   />
                   <Area 
                     type="monotone" 
-                    dataKey="employees" 
+                    dataKey="count" 
                     stroke="#10b981" 
                     strokeWidth={3}
                     fillOpacity={1} 

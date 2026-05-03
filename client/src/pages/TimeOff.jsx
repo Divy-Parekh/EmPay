@@ -45,6 +45,19 @@ export default function TimeOff() {
   const [attachment, setAttachment] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Auto-calculate days based on duration
+  useEffect(() => {
+    if (reqForm.start_date && reqForm.end_date) {
+      const start = new Date(reqForm.start_date);
+      const end = new Date(reqForm.end_date);
+      const diffTime = end - start;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      if (diffDays > 0) {
+        setReqForm(prev => ({ ...prev, allocation_days: diffDays }));
+      }
+    }
+  }, [reqForm.start_date, reqForm.end_date]);
+
   /* Allocation form */
   const [allocForm, setAllocForm] = useState({ employee_id: '', time_off_type_id: '', days: 0 });
 
@@ -377,10 +390,31 @@ export default function TimeOff() {
             placeholder="Select type..."
           />
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">Start Date *</label><input type="date" value={reqForm.start_date} onChange={e => setReqForm({...reqForm, start_date: e.target.value})} className="input-field" /></div>
-            <div><label className="label">End Date *</label><input type="date" value={reqForm.end_date} onChange={e => setReqForm({...reqForm, end_date: e.target.value})} className="input-field" /></div>
+            <CustomDatePicker 
+              label="Start Date *"
+              value={reqForm.start_date}
+              onChange={val => setReqForm({...reqForm, start_date: val})}
+            />
+            <CustomDatePicker 
+              label="End Date *"
+              value={reqForm.end_date}
+              onChange={val => setReqForm({...reqForm, end_date: val})}
+            />
           </div>
-          <div><label className="label">Days</label><input type="number" min="0.5" step="0.5" value={reqForm.allocation_days} onChange={e => setReqForm({...reqForm, allocation_days: Number(e.target.value)})} className="input-field" /></div>
+          <div>
+            <label className="label">Total Days (Auto-calculated)</label>
+            <div className="relative">
+              <input 
+                type="number" 
+                min="0.5" 
+                step="0.5" 
+                value={reqForm.allocation_days} 
+                onChange={e => setReqForm({...reqForm, allocation_days: Number(e.target.value)})} 
+                className="input-field pr-16" 
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded">DAYS</span>
+            </div>
+          </div>
           <div><label className="label">Note</label><textarea value={reqForm.note} onChange={e => setReqForm({...reqForm, note: e.target.value})} className="input-field resize-none" rows={2} /></div>
           <div>
             <label className="label">Attachment (for sick leave)</label>
